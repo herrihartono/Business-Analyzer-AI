@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -5,16 +6,24 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import init_db
-from app.api.routes import upload, analysis, dashboard, chat, cache
-from app.services.redis_cache import init_redis, close_redis, redis_health
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    await init_redis()
+    try:
+        from app.services.redis_cache import init_redis, close_redis
+        await init_redis()
+    except Exception as e:
+        logger.warning("Redis init skipped: %s", e)
     yield
-    await close_redis()
+    try:
+        from app.services.redis_cache import close_redis
+        await close_redis()
+    except Exception:
+        pass
 
 
 app = FastAPI(
@@ -26,6 +35,7 @@ app = FastAPI(
 
 settings = get_settings()
 origins = [o.strip() for o in settings.allowed_origins.split(",")]
+origins.append("*")
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +45,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.api.routes import upload, analysis, dashboard, chat, cache
+
 app.include_router(upload.router, prefix="/api")
 app.include_router(analysis.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
@@ -42,7 +54,16 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(cache.router, prefix="/api")
 
 
+@app.get("/")
+async def root():
+    return {"status": "ok"}
+
+
 @app.get("/api/health")
 async def health():
-    redis_info = await redis_health()
+    try:
+        from app.services.redis_cache import redis_health
+        redis_info = await redis_health()
+    except Exception:
+        redis_info = {"status": "unavailable"}
     return {"status": "ok", "redis": redis_info}
