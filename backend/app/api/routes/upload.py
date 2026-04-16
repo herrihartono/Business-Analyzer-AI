@@ -32,16 +32,16 @@ async def upload_files(
                 detail=f"File type not allowed: {file.filename}",
             )
 
-        file_id = uuid.uuid4()
+        file_id = str(uuid.uuid4())
         ext = os.path.splitext(file.filename)[1]
-        stored_name = f"{file_id.hex}{ext}"
+        stored_name = f"{file_id.replace('-', '')}{ext}"
         file_path = os.path.join(settings.upload_dir, stored_name)
 
         content = await file.read()
         async with aiofiles.open(file_path, "wb") as f:
             await f.write(content)
 
-        upload = Upload(
+        upload_record = Upload(
             id=file_id,
             filename=stored_name,
             original_name=file.filename,
@@ -49,8 +49,8 @@ async def upload_files(
             file_size=len(content),
             status="uploaded",
         )
-        db.add(upload)
-        results.append(upload)
+        db.add(upload_record)
+        results.append(upload_record)
 
     await db.flush()
 

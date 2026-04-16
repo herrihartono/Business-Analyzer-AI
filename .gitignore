@@ -44,5 +44,11 @@ backend/uploads/*
 # Redis
 dump.rdb
 
+# SQLite
+*.db
+
+# Root lockfile (not a root npm project)
+/package-lock.json
+
 # Alembic
 alembic/versions/__pycache__/

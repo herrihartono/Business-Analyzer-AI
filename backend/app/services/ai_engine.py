@@ -5,24 +5,23 @@ import hashlib
 from typing import Any
 
 import polars as pl
-import redis
 
 from app.config import get_settings
 
 settings = get_settings()
 
-_redis: redis.Redis | None = None
 
-
-def _get_redis() -> redis.Redis | None:
-    global _redis
-    if _redis is None:
-        try:
-            _redis = redis.from_url(settings.redis_url, decode_responses=True)
-            _redis.ping()
-        except Exception:
-            _redis = None
-    return _redis
+def _get_redis():
+    """Try to connect to Redis if configured. Returns None if unavailable."""
+    if not settings.redis_url:
+        return None
+    try:
+        import redis
+        r = redis.from_url(settings.redis_url, decode_responses=True)
+        r.ping()
+        return r
+    except Exception:
+        return None
 
 
 def _cache_key(data_hash: str, prompt_type: str) -> str:

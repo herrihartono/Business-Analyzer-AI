@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import uuid
 from datetime import datetime
 from typing import Any
 
@@ -8,7 +7,7 @@ from pydantic import BaseModel
 
 
 class UploadResponse(BaseModel):
-    id: uuid.UUID
+    id: str
     filename: str
     original_name: str
     file_type: str
@@ -20,8 +19,8 @@ class UploadResponse(BaseModel):
 
 
 class AnalysisResponse(BaseModel):
-    id: uuid.UUID
-    upload_id: uuid.UUID
+    id: str
+    upload_id: str
     status: str
     business_type: str | None = None
     summary: str | None = None
@@ -39,11 +38,11 @@ class AnalysisResponse(BaseModel):
 
 
 class AnalyzeRequest(BaseModel):
-    upload_id: uuid.UUID
+    upload_id: str
 
 
 class ChatRequest(BaseModel):
-    analysis_id: uuid.UUID
+    analysis_id: str
     question: str
 
 

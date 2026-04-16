@@ -23,12 +23,13 @@ async def create_analysis(
     req: AnalyzeRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    upload = await db.get(Upload, req.upload_id)
+    result = await db.execute(select(Upload).where(Upload.id == req.upload_id))
+    upload = result.scalar_one_or_none()
     if not upload:
         raise HTTPException(status_code=404, detail="Upload not found")
 
     analysis = AnalysisResult(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         upload_id=upload.id,
         status="processing",
     )
@@ -74,10 +75,11 @@ async def create_analysis(
 
 @router.get("/analysis/{analysis_id}", response_model=AnalysisResponse)
 async def get_analysis(
-    analysis_id: uuid.UUID,
+    analysis_id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    analysis = await db.get(AnalysisResult, analysis_id)
+    result = await db.execute(select(AnalysisResult).where(AnalysisResult.id == analysis_id))
+    analysis = result.scalar_one_or_none()
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
     return analysis

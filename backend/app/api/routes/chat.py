@@ -1,6 +1,7 @@
 import json
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -17,7 +18,8 @@ async def chat_with_data(
     req: ChatRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    analysis = await db.get(AnalysisResult, req.analysis_id)
+    result = await db.execute(select(AnalysisResult).where(AnalysisResult.id == req.analysis_id))
+    analysis = result.scalar_one_or_none()
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
     if analysis.status != "completed":

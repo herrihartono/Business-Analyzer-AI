@@ -3,9 +3,8 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+asyncpg://smartbiz:smartbiz_secret@localhost:5432/smartbiz"
-    database_url_sync: str = "postgresql://smartbiz:smartbiz_secret@localhost:5432/smartbiz"
-    redis_url: str = "redis://localhost:6379/0"
+    database_url: str = "sqlite+aiosqlite:///./smartbiz.db"
+    redis_url: str = ""
     openai_api_key: str = ""
     secret_key: str = "change-me"
     upload_dir: str = "uploads"
