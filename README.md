@@ -2,19 +2,26 @@
 
 AI-powered business analysis platform that automatically analyzes data from multiple file formats (Excel, CSV, PDF, DOCX) and delivers insights, recommendations, and interactive visualizations.
 
+## Deploy (Free Hosting)
+
+| Service | Platform | Link |
+|---------|----------|------|
+| Frontend | Vercel | [frontend-three-neon-89.vercel.app](https://frontend-three-neon-89.vercel.app) |
+| Backend | Render | [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/herrihartono/Business-Analyzer-AI) |
+
 ## Tech Stack
 
-**Backend:** FastAPI, Polars, LangChain, PostgreSQL, Redis, Celery  
-**Frontend:** Next.js 14, TypeScript, Tailwind CSS, ShadCN UI, Recharts, Framer Motion
+**Backend:** FastAPI, Python, Polars, LangChain + OpenAI, SQLAlchemy, Redis  
+**Frontend:** Next.js 16, TypeScript, React 19, Tailwind CSS, ShadCN UI, Recharts, Framer Motion
 
 ## Quick Start
 
 ### Prerequisites
 
-- Docker & Docker Compose
 - Node.js 18+
-- Python 3.11+
+- Python 3.12+
 - OpenAI API key (for AI insights)
+- Redis (optional, for caching)
 
 ### Run with Docker Compose
 
