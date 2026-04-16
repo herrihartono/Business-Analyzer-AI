@@ -45,7 +45,7 @@ def _has_openai() -> bool:
 
 
 def _call_openai(system_prompt: str, user_prompt: str, temperature: float = 0.3) -> str | None:
-    """Call OpenAI via LangChain with Redis caching. Returns raw response text or None."""
+    """Call OpenAI Chat Completions API with Redis caching."""
     if not _has_openai():
         return None
 
@@ -61,19 +61,18 @@ def _call_openai(system_prompt: str, user_prompt: str, temperature: float = 0.3)
             pass
 
     try:
-        from langchain_openai import ChatOpenAI
-        from langchain_core.messages import SystemMessage, HumanMessage
+        from openai import OpenAI
 
-        llm = ChatOpenAI(
+        client = OpenAI(api_key=settings.openai_api_key)
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
-            api_key=settings.openai_api_key,
             temperature=temperature,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
         )
-        response = llm.invoke([
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt),
-        ])
-        result = response.content
+        result = response.choices[0].message.content
 
         if r and result:
             try:
