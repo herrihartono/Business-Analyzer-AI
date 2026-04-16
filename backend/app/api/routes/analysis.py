@@ -11,8 +11,7 @@ from app.models.analysis import AnalysisResult
 from app.models.schemas import AnalyzeRequest, AnalysisResponse
 from app.services.file_parser import parse_file, dataframe_preview, column_statistics
 from app.services.data_cleaner import clean_dataframe
-from app.services.analyzer import detect_business_type, calculate_kpis, detect_trends, generate_summary
-from app.services.ai_engine import generate_insights, generate_recommendations
+from app.services.ai_engine import ai_detect_business_type, ai_calculate_kpis, ai_full_analysis
 from app.services.chart_generator import generate_charts
 
 router = APIRouter(tags=["analysis"])
@@ -37,16 +36,24 @@ async def create_analysis(
     await db.flush()
 
     try:
+        # Step 1: Parse and clean file
         df = parse_file(upload.filename)
         df, cleaning_report = clean_dataframe(df)
 
-        business_type = detect_business_type(df)
-        kpis = calculate_kpis(df, business_type)
-        trends = detect_trends(df)
-        summary = generate_summary(df, business_type, kpis, trends)
+        # Step 2: AI detects business type
+        business_type = ai_detect_business_type(df)
 
-        insights = generate_insights(df, business_type, kpis, trends)
-        recommendations = generate_recommendations(df, business_type, kpis, insights)
+        # Step 3: AI calculates meaningful KPIs
+        kpis = ai_calculate_kpis(df, business_type)
+
+        # Step 4: AI performs full business analysis
+        ai_result = ai_full_analysis(df, business_type, kpis)
+
+        summary = ai_result.get("summary", f"{business_type} analysis completed.")
+        insights = ai_result.get("insights", [])
+        recommendations = ai_result.get("recommendations", [])
+
+        # Step 5: Generate charts
         charts = generate_charts(df, business_type)
 
         preview = dataframe_preview(df)
@@ -68,7 +75,9 @@ async def create_analysis(
 
     except Exception as e:
         analysis.status = "failed"
-        analysis.summary = str(e)
+        analysis.summary = f"Analysis failed: {str(e)}"
+        import traceback
+        traceback.print_exc()
 
     return analysis
 

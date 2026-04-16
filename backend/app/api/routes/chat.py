@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.models.analysis import AnalysisResult
 from app.models.schemas import ChatRequest, ChatResponse
+from app.services.ai_engine import _call_openai, _has_openai
 
 router = APIRouter(tags=["chat"])
 settings = get_settings()
@@ -27,8 +28,8 @@ async def chat_with_data(
 
     context = _build_chat_context(analysis)
 
-    if settings.openai_api_key and settings.openai_api_key != "sk-your-key-here":
-        answer = await _llm_answer(req.question, context)
+    if _has_openai():
+        answer = _ai_chat(req.question, context, analysis.business_type)
     else:
         answer = _rule_based_answer(req.question, analysis)
 
@@ -42,62 +43,55 @@ def _build_chat_context(analysis: AnalysisResult) -> str:
     ]
 
     if analysis.kpis:
-        parts.append("KPIs:")
+        parts.append("\nKPIs:")
         for kpi in analysis.kpis:
             parts.append(f"  - {kpi.get('name', '')}: {kpi.get('value', '')}")
 
     if analysis.insights:
-        parts.append("Insights:")
+        parts.append("\nInsights:")
         for ins in analysis.insights:
             parts.append(f"  - {ins.get('title', '')}: {ins.get('description', '')}")
 
+    if analysis.recommendations:
+        parts.append("\nRecommendations:")
+        for rec in analysis.recommendations:
+            parts.append(f"  - [{rec.get('priority', '')}] {rec.get('title', '')}: {rec.get('description', '')}")
+
     if analysis.column_stats:
-        parts.append("Column Statistics:")
-        parts.append(json.dumps(analysis.column_stats, indent=2, default=str)[:2000])
+        parts.append("\nColumn Statistics:")
+        parts.append(json.dumps(analysis.column_stats, indent=2, default=str)[:3000])
 
     if analysis.raw_data_preview:
-        parts.append("Sample Data (first 5 rows):")
-        for row in analysis.raw_data_preview[:5]:
-            parts.append(f"  {json.dumps(row, default=str)}")
+        parts.append("\nSample Data (first 10 rows):")
+        for row in analysis.raw_data_preview[:10]:
+            parts.append(f"  {json.dumps(row, default=str, ensure_ascii=False)}")
 
     return "\n".join(parts)
 
 
-async def _llm_answer(question: str, context: str) -> str:
-    try:
-        from langchain_openai import ChatOpenAI
-        from langchain_core.messages import SystemMessage, HumanMessage
-
-        llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            api_key=settings.openai_api_key,
-            temperature=0.3,
-        )
-
-        system_prompt = (
-            "You are a helpful business data analyst assistant. "
-            "Answer the user's question based ONLY on the provided data context. "
-            "Be concise, specific, and reference actual numbers from the data. "
-            "If the data doesn't contain enough info to answer, say so."
-        )
-
-        response = llm.invoke([
-            SystemMessage(content=f"{system_prompt}\n\nData Context:\n{context}"),
-            HumanMessage(content=question),
-        ])
-
-        return response.content
-    except Exception as e:
-        return f"AI chat error: {str(e)}. Please check your API key configuration."
+def _ai_chat(question: str, context: str, business_type: str) -> str:
+    result = _call_openai(
+        system_prompt=(
+            "You are a friendly and expert business data analyst assistant. "
+            f"You are helping analyze a {business_type} business. "
+            "Answer the user's question based on the analysis data provided. "
+            "Be specific -- reference actual numbers, field names, and values. "
+            "If asked for advice, give actionable business recommendations. "
+            "Answer in the same language as the user's question. "
+            "Keep answers concise but informative (2-5 sentences)."
+        ),
+        user_prompt=f"ANALYSIS DATA:\n{context}\n\nUSER QUESTION: {question}",
+    )
+    return result or "I couldn't process that question. Please try rephrasing."
 
 
 def _rule_based_answer(question: str, analysis: AnalysisResult) -> str:
     q = question.lower()
 
-    if any(kw in q for kw in ["summary", "overview", "tell me about"]):
-        return analysis.summary or "No summary available for this analysis."
+    if any(kw in q for kw in ["summary", "overview", "tell me", "ringkasan", "apa ini"]):
+        return analysis.summary or "No summary available."
 
-    if any(kw in q for kw in ["kpi", "metric", "number", "total", "value"]):
+    if any(kw in q for kw in ["kpi", "metric", "number", "total", "value", "angka", "nilai"]):
         if analysis.kpis:
             lines = ["Here are the key metrics:"]
             for kpi in analysis.kpis:
@@ -105,15 +99,15 @@ def _rule_based_answer(question: str, analysis: AnalysisResult) -> str:
             return "\n".join(lines)
         return "No KPI data available."
 
-    if any(kw in q for kw in ["insight", "finding", "discover"]):
+    if any(kw in q for kw in ["insight", "finding", "temuan", "analisa"]):
         if analysis.insights:
-            lines = ["Key insights from the analysis:"]
+            lines = ["Key insights:"]
             for ins in analysis.insights:
                 lines.append(f"  - {ins.get('title', '')}: {ins.get('description', '')}")
             return "\n".join(lines)
         return "No insights available."
 
-    if any(kw in q for kw in ["recommend", "suggest", "should", "action"]):
+    if any(kw in q for kw in ["recommend", "suggest", "should", "action", "saran", "rekomendasi"]):
         if analysis.recommendations:
             lines = ["Recommendations:"]
             for rec in analysis.recommendations:
@@ -122,7 +116,7 @@ def _rule_based_answer(question: str, analysis: AnalysisResult) -> str:
         return "No recommendations available."
 
     return (
-        f"Based on the {analysis.business_type} analysis: {analysis.summary or 'Analysis completed.'} "
-        "For more specific answers, try asking about KPIs, insights, or recommendations. "
-        "Configure an OpenAI API key for full AI chat capabilities."
+        f"Analysis: {analysis.summary or 'Completed.'}\n\n"
+        "Try asking about: KPIs, insights, recommendations, or a summary.\n"
+        "For full AI chat, add your OpenAI API key to backend/.env"
     )
