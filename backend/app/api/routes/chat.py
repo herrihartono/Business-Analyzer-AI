@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models.analysis import AnalysisResult
 from app.models.schemas import ChatRequest, ChatResponse
 from app.services.ai_engine import _call_openai, _has_openai
+from app.services.redis_cache import get_cached_chat, set_cached_chat
 
 router = APIRouter(tags=["chat"])
 settings = get_settings()
@@ -26,12 +27,18 @@ async def chat_with_data(
     if analysis.status != "completed":
         raise HTTPException(status_code=400, detail="Analysis not yet completed")
 
+    cached_answer = await get_cached_chat(req.analysis_id, req.question)
+    if cached_answer:
+        return ChatResponse(answer=cached_answer, sources=["analysis_data", "cache"])
+
     context = _build_chat_context(analysis)
 
     if _has_openai():
         answer = _ai_chat(req.question, context, analysis.business_type)
     else:
         answer = _rule_based_answer(req.question, analysis)
+
+    await set_cached_chat(req.analysis_id, req.question, answer)
 
     return ChatResponse(answer=answer, sources=["analysis_data"])
 

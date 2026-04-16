@@ -1,15 +1,43 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from typing import Any
 
 import polars as pl
+import redis as sync_redis
 
 from app.config import get_settings
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
+
+_sync_pool: sync_redis.Redis | None = None
+_OPENAI_CACHE_TTL = 60 * 60 * 12  # 12 hours
+
+
+def _get_sync_redis() -> sync_redis.Redis | None:
+    """Lazy-init a synchronous Redis client for use inside sync functions."""
+    global _sync_pool
+    if _sync_pool is not None:
+        return _sync_pool
+    url = settings.redis_url
+    if not url or not url.strip():
+        return None
+    try:
+        _sync_pool = sync_redis.from_url(url, decode_responses=True, socket_connect_timeout=2)
+        _sync_pool.ping()
+        return _sync_pool
+    except Exception as e:
+        logger.debug("Sync Redis unavailable: %s", e)
+        _sync_pool = None
+        return None
+
+
+def _cache_key(system_prompt: str, user_prompt: str) -> str:
+    raw = f"{system_prompt}|{user_prompt}"
+    return f"openai:{hashlib.sha256(raw.encode()).hexdigest()[:16]}"
 
 
 def _has_openai() -> bool:
@@ -17,9 +45,21 @@ def _has_openai() -> bool:
 
 
 def _call_openai(system_prompt: str, user_prompt: str, temperature: float = 0.3) -> str | None:
-    """Call OpenAI via LangChain. Returns raw response text or None on failure."""
+    """Call OpenAI via LangChain with Redis caching. Returns raw response text or None."""
     if not _has_openai():
         return None
+
+    r = _get_sync_redis()
+    if r:
+        key = _cache_key(system_prompt, user_prompt)
+        try:
+            cached = r.get(key)
+            if cached:
+                logger.info("Redis cache HIT for OpenAI call (%s)", key)
+                return cached
+        except Exception:
+            pass
+
     try:
         from langchain_openai import ChatOpenAI
         from langchain_core.messages import SystemMessage, HumanMessage
@@ -33,7 +73,15 @@ def _call_openai(system_prompt: str, user_prompt: str, temperature: float = 0.3)
             SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt),
         ])
-        return response.content
+        result = response.content
+
+        if r and result:
+            try:
+                r.set(_cache_key(system_prompt, user_prompt), result, ex=_OPENAI_CACHE_TTL)
+            except Exception:
+                pass
+
+        return result
     except Exception as e:
         logger.warning("OpenAI call failed: %s", e)
         return None

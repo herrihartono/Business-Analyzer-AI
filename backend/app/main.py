@@ -5,13 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import init_db
-from app.api.routes import upload, analysis, dashboard, chat
+from app.api.routes import upload, analysis, dashboard, chat, cache
+from app.services.redis_cache import init_redis, close_redis, redis_health
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    await init_redis()
     yield
+    await close_redis()
 
 
 app = FastAPI(
@@ -36,8 +39,10 @@ app.include_router(upload.router, prefix="/api")
 app.include_router(analysis.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
+app.include_router(cache.router, prefix="/api")
 
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok"}
+    redis_info = await redis_health()
+    return {"status": "ok", "redis": redis_info}
