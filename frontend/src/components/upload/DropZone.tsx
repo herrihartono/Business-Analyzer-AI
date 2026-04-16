@@ -66,45 +66,46 @@ export function DropZone({ onUploaded }: DropZoneProps) {
 
   return (
     <div className="space-y-4">
-      <motion.div
-        {...getRootProps()}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-        className={cn(
-          "glass relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors",
-          isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
-        )}
-      >
-        <input {...getInputProps()} />
+      <div {...getRootProps()}>
         <motion.div
-          animate={isDragActive ? { y: -5, scale: 1.1 } : { y: 0, scale: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          className={cn(
+            "glass relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors",
+            isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+          )}
         >
-          <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-        </motion.div>
-        <p className="mt-4 text-lg font-medium">
-          {isDragActive ? "Drop files here..." : "Drag & drop files here"}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          or click to browse. Supports Excel, CSV, PDF, DOCX
-        </p>
-        <div className="mt-3 flex gap-2">
-          <Badge variant="secondary">.xlsx</Badge>
-          <Badge variant="secondary">.csv</Badge>
-          <Badge variant="secondary">.pdf</Badge>
-          <Badge variant="secondary">.docx</Badge>
-        </div>
-
-        {uploading && (
-          <div className="mt-4 w-full max-w-xs">
-            <Progress value={uploadProgress} />
-            <div className="mt-1 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Uploading...
-            </div>
+          <input {...getInputProps()} />
+          <motion.div
+            animate={isDragActive ? { y: -5, scale: 1.1 } : { y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          >
+            <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+          </motion.div>
+          <p className="mt-4 text-lg font-medium">
+            {isDragActive ? "Drop files here..." : "Drag & drop files here"}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            or click to browse. Supports Excel, CSV, PDF, DOCX
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Badge variant="secondary">.xlsx</Badge>
+            <Badge variant="secondary">.csv</Badge>
+            <Badge variant="secondary">.pdf</Badge>
+            <Badge variant="secondary">.docx</Badge>
           </div>
-        )}
-      </motion.div>
+
+          {uploading && (
+            <div className="mt-4 w-full max-w-xs">
+              <Progress value={uploadProgress} />
+              <div className="mt-1 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading...
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </div>
 
       <AnimatePresence>
         {uploadedFiles.length > 0 && (
