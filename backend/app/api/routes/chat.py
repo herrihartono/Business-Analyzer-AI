@@ -4,15 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import get_settings
 from app.database import get_db
 from app.models.analysis import AnalysisResult
 from app.models.schemas import ChatRequest, ChatResponse
-from app.services.ai_engine import _call_gemini, _has_gemini
+from app.services.ai_engine import has_gemini, generate_chat_response
 from app.services.redis_cache import get_cached_chat, set_cached_chat
 
 router = APIRouter(tags=["chat"])
-settings = get_settings()
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -33,8 +31,8 @@ async def chat_with_data(
 
     context = _build_chat_context(analysis)
 
-    if _has_gemini():
-        answer = _ai_chat(req.question, context, analysis.business_type)
+    if has_gemini():
+        answer = generate_chat_response(req.question, context, analysis.business_type)
     else:
         answer = _rule_based_answer(req.question, analysis)
 
@@ -76,22 +74,6 @@ def _build_chat_context(analysis: AnalysisResult) -> str:
     return "\n".join(parts)
 
 
-def _ai_chat(question: str, context: str, business_type: str) -> str:
-    result = _call_gemini(
-        system_prompt=(
-            "You are a friendly and expert business data analyst assistant. "
-            f"You are helping analyze a {business_type} business. "
-            "Answer the user's question based on the analysis data provided. "
-            "Be specific -- reference actual numbers, field names, and values. "
-            "If asked for advice, give actionable business recommendations. "
-            "Answer in the same language as the user's question. "
-            "Keep answers concise but informative (2-5 sentences)."
-        ),
-        user_prompt=f"ANALYSIS DATA:\n{context}\n\nUSER QUESTION: {question}",
-    )
-    return result or "I couldn't process that question. Please try rephrasing."
-
-
 def _rule_based_answer(question: str, analysis: AnalysisResult) -> str:
     q = question.lower()
 
@@ -124,6 +106,5 @@ def _rule_based_answer(question: str, analysis: AnalysisResult) -> str:
 
     return (
         f"Analysis: {analysis.summary or 'Completed.'}\n\n"
-        "Try asking about: KPIs, insights, recommendations, or a summary.\n"
-        "For full AI chat, add your Gemini API key to backend/.env"
+        "Try asking about: KPIs, insights, recommendations, or a summary."
     )
