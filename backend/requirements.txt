@@ -9,8 +9,9 @@ pandas
 openpyxl
 pdfplumber
 python-docx
-openai
+google-generativeai
 sqlalchemy[asyncio]
 aiosqlite
+asyncpg
 aiofiles
 redis

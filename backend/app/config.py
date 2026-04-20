@@ -11,21 +11,23 @@ if env_path.exists():
     load_dotenv(env_path)
 
 REQUIRED_ENV_VARS = {
-    "DATABASE_URL": "Database connection string (e.g. sqlite+aiosqlite:///./smartbiz.db)",
-    "OPENAI_API_KEY": "OpenAI API key for AI-powered analysis (https://platform.openai.com/api-keys)",
+    "GEMINI_API_KEY": "Google AI Studio API key (https://aistudio.google.com/apikey)",
 }
 
 OPTIONAL_ENV_VARS = {
+    "DATABASE_URL": "Database connection string (default: SQLite)",
     "REDIS_URL": "Redis connection string (leave empty to disable caching)",
     "SECRET_KEY": "Secret key for signing tokens",
     "ALLOWED_ORIGINS": "Comma-separated allowed CORS origins",
+    "GEMINI_MODEL": "Gemini model name (default: gemini-2.0-flash)",
 }
 
 
 class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./smartbiz.db"
     redis_url: str = ""
-    openai_api_key: str = ""
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
     secret_key: str = "change-me"
     upload_dir: str = "uploads"
     allowed_origins: str = "http://localhost:3000"

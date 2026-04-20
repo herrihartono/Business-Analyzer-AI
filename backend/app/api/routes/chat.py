@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.models.analysis import AnalysisResult
 from app.models.schemas import ChatRequest, ChatResponse
-from app.services.ai_engine import _call_openai, _has_openai
+from app.services.ai_engine import _call_gemini, _has_gemini
 from app.services.redis_cache import get_cached_chat, set_cached_chat
 
 router = APIRouter(tags=["chat"])
@@ -33,7 +33,7 @@ async def chat_with_data(
 
     context = _build_chat_context(analysis)
 
-    if _has_openai():
+    if _has_gemini():
         answer = _ai_chat(req.question, context, analysis.business_type)
     else:
         answer = _rule_based_answer(req.question, analysis)
@@ -77,7 +77,7 @@ def _build_chat_context(analysis: AnalysisResult) -> str:
 
 
 def _ai_chat(question: str, context: str, business_type: str) -> str:
-    result = _call_openai(
+    result = _call_gemini(
         system_prompt=(
             "You are a friendly and expert business data analyst assistant. "
             f"You are helping analyze a {business_type} business. "
@@ -125,5 +125,5 @@ def _rule_based_answer(question: str, analysis: AnalysisResult) -> str:
     return (
         f"Analysis: {analysis.summary or 'Completed.'}\n\n"
         "Try asking about: KPIs, insights, recommendations, or a summary.\n"
-        "For full AI chat, add your OpenAI API key to backend/.env"
+        "For full AI chat, add your Gemini API key to backend/.env"
     )

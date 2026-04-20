@@ -18,12 +18,12 @@ async def cache_status():
 
 @router.post("/cache/flush")
 async def flush_cache():
-    """Flush all SmartBiz cache entries (analysis, chat, openai, dashboard)."""
+    """Flush all SmartBiz cache entries (analysis, chat, gemini, dashboard)."""
     if not _pool:
         return {"flushed": 0, "message": "Redis not connected"}
 
     total = 0
-    for prefix in ("analysis:*", "chat:*", "openai:*", "dashboard:*"):
+    for prefix in ("analysis:*", "chat:*", "gemini:*", "dashboard:*"):
         total += await _delete_pattern(prefix)
 
     return {"flushed": total, "message": f"Cleared {total} cached entries"}
@@ -31,8 +31,8 @@ async def flush_cache():
 
 @router.post("/cache/flush/{prefix}")
 async def flush_cache_by_prefix(prefix: str):
-    """Flush cache entries by prefix: analysis, chat, openai, or dashboard."""
-    allowed = {"analysis", "chat", "openai", "dashboard"}
+    """Flush cache entries by prefix: analysis, chat, gemini, or dashboard."""
+    allowed = {"analysis", "chat", "gemini", "dashboard"}
     if prefix not in allowed:
         return {"error": f"Unknown prefix. Allowed: {', '.join(sorted(allowed))}"}
 

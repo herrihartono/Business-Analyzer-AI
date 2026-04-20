@@ -10,8 +10,10 @@ services:
     envVars:
       - key: DATABASE_URL
         value: sqlite+aiosqlite:///./smartbiz.db
-      - key: OPENAI_API_KEY
+      - key: GEMINI_API_KEY
         sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
       - key: REDIS_URL
         value: ""
       - key: SECRET_KEY

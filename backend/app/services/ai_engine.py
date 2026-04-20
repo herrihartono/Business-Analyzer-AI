@@ -5,6 +5,7 @@ import json
 import logging
 from typing import Any
 
+import google.generativeai as genai
 import polars as pl
 import redis as sync_redis
 
@@ -14,7 +15,15 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 _sync_pool: sync_redis.Redis | None = None
-_OPENAI_CACHE_TTL = 60 * 60 * 12  # 12 hours
+_GEMINI_CACHE_TTL = 60 * 60 * 12  # 12 hours
+_gemini_configured = False
+
+
+def _ensure_gemini() -> None:
+    global _gemini_configured
+    if not _gemini_configured and settings.gemini_api_key:
+        genai.configure(api_key=settings.gemini_api_key)
+        _gemini_configured = True
 
 
 def _get_sync_redis() -> sync_redis.Redis | None:
@@ -37,16 +46,16 @@ def _get_sync_redis() -> sync_redis.Redis | None:
 
 def _cache_key(system_prompt: str, user_prompt: str) -> str:
     raw = f"{system_prompt}|{user_prompt}"
-    return f"openai:{hashlib.sha256(raw.encode()).hexdigest()[:16]}"
+    return f"gemini:{hashlib.sha256(raw.encode()).hexdigest()[:16]}"
 
 
-def _has_openai() -> bool:
-    return bool(settings.openai_api_key and settings.openai_api_key not in ("", "sk-your-key-here"))
+def _has_gemini() -> bool:
+    return bool(settings.gemini_api_key and settings.gemini_api_key.strip())
 
 
-def _call_openai(system_prompt: str, user_prompt: str, temperature: float = 0.3) -> str | None:
-    """Call OpenAI Chat Completions API with Redis caching."""
-    if not _has_openai():
+def _call_gemini(system_prompt: str, user_prompt: str, temperature: float = 0.3) -> str | None:
+    """Call Google Gemini API with Redis caching."""
+    if not _has_gemini():
         return None
 
     r = _get_sync_redis()
@@ -55,34 +64,30 @@ def _call_openai(system_prompt: str, user_prompt: str, temperature: float = 0.3)
         try:
             cached = r.get(key)
             if cached:
-                logger.info("Redis cache HIT for OpenAI call (%s)", key)
+                logger.info("Redis cache HIT for Gemini call (%s)", key)
                 return cached
         except Exception:
             pass
 
     try:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=settings.openai_api_key)
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            temperature=temperature,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+        _ensure_gemini()
+        model = genai.GenerativeModel(
+            model_name=settings.gemini_model,
+            system_instruction=system_prompt,
+            generation_config=genai.GenerationConfig(temperature=temperature),
         )
-        result = response.choices[0].message.content
+        response = model.generate_content(user_prompt)
+        result = response.text
 
         if r and result:
             try:
-                r.set(_cache_key(system_prompt, user_prompt), result, ex=_OPENAI_CACHE_TTL)
+                r.set(_cache_key(system_prompt, user_prompt), result, ex=_GEMINI_CACHE_TTL)
             except Exception:
                 pass
 
         return result
     except Exception as e:
-        logger.warning("OpenAI call failed: %s", e)
+        logger.warning("Gemini call failed: %s", e)
         return None
 
 
@@ -144,10 +149,10 @@ def _build_full_document_context(df: pl.DataFrame) -> str:
 # ---------------------------------------------------------------------------
 
 def ai_detect_business_type(df: pl.DataFrame) -> str:
-    """Use OpenAI to intelligently detect the business domain."""
+    """Use Gemini to intelligently detect the business domain."""
     context = _build_full_document_context(df)
 
-    result = _call_openai(
+    result = _call_gemini(
         system_prompt=(
             "You are a business domain classifier. Based on the dataset provided, "
             "determine what type of business or industry this data belongs to. "
@@ -167,7 +172,7 @@ def ai_detect_business_type(df: pl.DataFrame) -> str:
 
 
 def _fallback_detect_business_type(df: pl.DataFrame) -> str:
-    """Keyword-based fallback when OpenAI is unavailable."""
+    """Keyword-based fallback when Gemini is unavailable."""
     keywords = {
         "Retail / E-commerce": ["product", "sku", "price", "quantity", "order", "customer", "sale", "revenue", "discount", "cart", "shipping"],
         "Finance / Accounting": ["debit", "credit", "balance", "account", "transaction", "ledger", "invoice", "tax", "profit", "loss", "asset", "liability"],
@@ -196,10 +201,10 @@ def _fallback_detect_business_type(df: pl.DataFrame) -> str:
 # ---------------------------------------------------------------------------
 
 def ai_calculate_kpis(df: pl.DataFrame, business_type: str) -> list[dict]:
-    """Use OpenAI to identify and calculate meaningful business KPIs."""
+    """Use Gemini to identify and calculate meaningful business KPIs."""
     context = _build_full_document_context(df)
 
-    result = _call_openai(
+    result = _call_gemini(
         system_prompt=(
             "You are a senior business analyst. Given this dataset, identify the most important "
             "business KPIs (Key Performance Indicators) relevant to this data.\n\n"
@@ -261,14 +266,14 @@ def ai_full_analysis(
     kpis: list[dict],
 ) -> dict[str, Any]:
     """
-    Use OpenAI to perform a FULL business analysis in one call.
+    Use Gemini to perform a FULL business analysis in one call.
     Returns: {summary, insights, recommendations, trends}
     """
     context = _build_full_document_context(df)
 
     kpi_text = "\n".join(f"  - {k['name']}: {k['value']}" for k in kpis)
 
-    result = _call_openai(
+    result = _call_gemini(
         system_prompt=(
             "You are a world-class business analyst consultant. "
             "A client has uploaded their business data. Your job is to:\n"
@@ -325,7 +330,7 @@ def _fallback_full_analysis(
     business_type: str,
     kpis: list[dict],
 ) -> dict[str, Any]:
-    """Rich rule-based fallback when OpenAI is not available."""
+    """Rich rule-based fallback when Gemini is not available."""
 
     numeric_cols = [c for c in df.columns if df[c].dtype in (pl.Float64, pl.Float32, pl.Int64, pl.Int32)]
     text_cols = [c for c in df.columns if df[c].dtype == pl.Utf8]
@@ -382,7 +387,7 @@ def _fallback_full_analysis(
                 insights.append({"title": f"{'Growth' if direction == 'up' else 'Decline'} in {col}", "description": f"{col} changed by {round(pct, 1)}% from first to second half of data.", "severity": "success" if direction == "up" else "warning", "category": "Trend"})
 
     recommendations = [
-        {"title": "Enable AI Analysis", "description": "Add your OpenAI API key to backend/.env for intelligent business analysis. The AI will understand your specific business context and give targeted advice.", "priority": "high", "impact": "10x better insights quality"},
+        {"title": "Enable AI Analysis", "description": "Add your Gemini API key to backend/.env for intelligent business analysis. The AI will understand your specific business context and give targeted advice.", "priority": "high", "impact": "10x better insights quality"},
         {"title": "Use Structured Data Files", "description": "For best results, upload Excel or CSV files with clear column headers. This allows the system to calculate precise KPIs.", "priority": "medium", "impact": "More accurate analysis"},
         {"title": "Regular Monitoring", "description": f"Upload updated {business_type} data periodically to track changes and catch issues early.", "priority": "medium", "impact": "Proactive decision-making"},
     ]
