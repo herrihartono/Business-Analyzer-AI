@@ -4,7 +4,7 @@ Redis caching layer for SmartBiz Analyzer.
 Provides async caching for:
 - Analysis results (keyed by upload_id)
 - Chat responses  (keyed by analysis_id + question hash)
-- Gemini responses (keyed by prompt hash)
+- LLM responses (keyed by prompt hash)
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ _pool: aioredis.Redis | None = None
 
 TTL_ANALYSIS = 60 * 60 * 24      # 24 hours
 TTL_CHAT     = 60 * 60 * 4       # 4 hours
-TTL_GEMINI   = 60 * 60 * 12      # 12 hours
+TTL_LLM   = 60 * 60 * 12      # 12 hours
 TTL_DASHBOARD = 60 * 5           # 5 minutes
 
 
@@ -132,17 +132,17 @@ async def set_cached_chat(analysis_id: str, question: str, answer: str) -> None:
     await _set(key, {"answer": answer}, TTL_CHAT)
 
 
-# ── Gemini response cache (deduplication of identical prompts) ───
+# ── LLM response cache (deduplication of identical prompts) ───
 
-async def get_cached_gemini(system_prompt: str, user_prompt: str) -> str | None:
-    key = f"gemini:{_hash_key(system_prompt, user_prompt)}"
+async def get_cached_llm(system_prompt: str, user_prompt: str) -> str | None:
+    key = f"llm:{_hash_key(system_prompt, user_prompt)}"
     result = await _get(key)
     return result.get("response") if result else None
 
 
-async def set_cached_gemini(system_prompt: str, user_prompt: str, response: str) -> None:
-    key = f"gemini:{_hash_key(system_prompt, user_prompt)}"
-    await _set(key, {"response": response}, TTL_GEMINI)
+async def set_cached_llm(system_prompt: str, user_prompt: str, response: str) -> None:
+    key = f"llm:{_hash_key(system_prompt, user_prompt)}"
+    await _set(key, {"response": response}, TTL_LLM)
 
 
 # ── Dashboard / stats cache ─────────────────────────────────────

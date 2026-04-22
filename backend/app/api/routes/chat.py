@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.analysis import AnalysisResult
 from app.models.schemas import ChatRequest, ChatResponse
-from app.services.ai_engine import has_gemini, generate_chat_response
+from app.services.ai_engine import has_groq, generate_chat_response
 from app.services.redis_cache import get_cached_chat, set_cached_chat
 
 router = APIRouter(tags=["chat"])
@@ -31,7 +31,7 @@ async def chat_with_data(
 
     context = _build_chat_context(analysis)
 
-    if has_gemini():
+    if has_groq():
         answer = generate_chat_response(req.question, context, analysis.business_type)
     else:
         answer = _rule_based_answer(req.question, analysis)

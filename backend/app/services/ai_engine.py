@@ -5,7 +5,7 @@ import json
 import logging
 from typing import Any
 
-import google.generativeai as genai
+import groq
 import polars as pl
 import redis as sync_redis
 
@@ -15,15 +15,15 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 _sync_pool: sync_redis.Redis | None = None
-_GEMINI_CACHE_TTL = 60 * 60 * 12  # 12 hours
-_gemini_configured = False
+_LLM_CACHE_TTL = 60 * 60 * 12  # 12 hours
+_groq_client: groq.Groq | None = None
 
 
-def _ensure_gemini() -> None:
-    global _gemini_configured
-    if not _gemini_configured and settings.gemini_api_key:
-        genai.configure(api_key=settings.gemini_api_key)
-        _gemini_configured = True
+def _get_groq_client() -> groq.Groq | None:
+    global _groq_client
+    if _groq_client is None and settings.groq_api_key:
+        _groq_client = groq.Groq(api_key=settings.groq_api_key)
+    return _groq_client
 
 
 def _get_sync_redis() -> sync_redis.Redis | None:
@@ -45,24 +45,24 @@ def _get_sync_redis() -> sync_redis.Redis | None:
 
 def _cache_key(system_prompt: str, user_prompt: str) -> str:
     raw = f"{system_prompt}|{user_prompt}"
-    return f"gemini:{hashlib.sha256(raw.encode()).hexdigest()[:16]}"
+    return f"llm:{hashlib.sha256(raw.encode()).hexdigest()[:16]}"
 
 
-def has_gemini() -> bool:
-    return bool(settings.gemini_api_key and settings.gemini_api_key.strip())
+def has_groq() -> bool:
+    return bool(settings.groq_api_key and settings.groq_api_key.strip())
 
 
 # ---------------------------------------------------------------------------
-# Core Gemini call functions
+# Core Groq call functions
 # ---------------------------------------------------------------------------
 
-def _call_gemini(
+def _call_groq(
     system_prompt: str,
     user_prompt: str,
     temperature: float = 0.3,
 ) -> str | None:
-    """Call Gemini and return plain text response with Redis caching."""
-    if not has_gemini():
+    """Call Groq and return plain text response with Redis caching."""
+    if not has_groq():
         return None
 
     r = _get_sync_redis()
@@ -77,34 +77,39 @@ def _call_gemini(
             pass
 
     try:
-        _ensure_gemini()
-        model = genai.GenerativeModel(
-            model_name=settings.gemini_model,
-            system_instruction=system_prompt,
-            generation_config=genai.GenerationConfig(temperature=temperature),
+        client = _get_groq_client()
+        if not client:
+            return None
+            
+        response = client.chat.completions.create(
+            model=settings.groq_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=temperature,
         )
-        response = model.generate_content(user_prompt)
-        result = response.text
+        result = response.choices[0].message.content
 
         if r and result:
             try:
-                r.set(cache_k, result, ex=_GEMINI_CACHE_TTL)
+                r.set(cache_k, result, ex=_LLM_CACHE_TTL)
             except Exception:
                 pass
 
         return result
     except Exception as e:
-        logger.warning("Gemini call failed: %s", e)
+        logger.warning("Groq call failed: %s", e)
         return None
 
 
-def _call_gemini_json(
+def _call_groq_json(
     system_prompt: str,
     user_prompt: str,
     temperature: float = 0.3,
 ) -> Any | None:
-    """Call Gemini with JSON response mode for reliable structured output."""
-    if not has_gemini():
+    """Call Groq with JSON response mode for reliable structured output."""
+    if not has_groq():
         return None
 
     r = _get_sync_redis()
@@ -119,30 +124,33 @@ def _call_gemini_json(
             pass
 
     try:
-        _ensure_gemini()
-        model = genai.GenerativeModel(
-            model_name=settings.gemini_model,
-            system_instruction=system_prompt,
-            generation_config=genai.GenerationConfig(
-                temperature=temperature,
-                response_mime_type="application/json",
-            ),
+        client = _get_groq_client()
+        if not client:
+            return None
+
+        response = client.chat.completions.create(
+            model=settings.groq_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=temperature,
+            response_format={"type": "json_object"},
         )
-        response = model.generate_content(user_prompt)
-        text = response.text
+        text = response.choices[0].message.content
 
         if r and text:
             try:
-                r.set(cache_k, text, ex=_GEMINI_CACHE_TTL)
+                r.set(cache_k, text, ex=_LLM_CACHE_TTL)
             except Exception:
                 pass
 
         return json.loads(text)
     except json.JSONDecodeError:
-        logger.warning("Gemini returned invalid JSON, falling back to text parse")
-        return _parse_json_response(response.text if response else None)
+        logger.warning("Groq returned invalid JSON, falling back to text parse")
+        return _parse_json_response(text if 'text' in locals() else None)
     except Exception as e:
-        logger.warning("Gemini JSON call failed: %s", e)
+        logger.warning("Groq JSON call failed: %s", e)
         return None
 
 
@@ -208,10 +216,10 @@ def _build_full_document_context(df: pl.DataFrame) -> str:
 # ---------------------------------------------------------------------------
 
 def ai_detect_business_type(df: pl.DataFrame) -> str:
-    """Use Gemini JSON mode to detect the business domain."""
+    """Use Groq JSON mode to detect the business domain."""
     context = _build_full_document_context(df)
 
-    parsed = _call_gemini_json(
+    parsed = _call_groq_json(
         system_prompt=(
             "You are a business domain classifier. Based on the dataset provided, "
             "determine what type of business or industry this data belongs to.\n\n"
@@ -230,7 +238,7 @@ def ai_detect_business_type(df: pl.DataFrame) -> str:
 
 
 def _fallback_detect_business_type(df: pl.DataFrame) -> str:
-    """Keyword-based fallback when Gemini is unavailable."""
+    """Keyword-based fallback when Groq is unavailable."""
     keywords = {
         "Retail / E-commerce": [
             "product", "sku", "price", "quantity", "order", "customer",
@@ -286,10 +294,10 @@ def _fallback_detect_business_type(df: pl.DataFrame) -> str:
 # ---------------------------------------------------------------------------
 
 def ai_calculate_kpis(df: pl.DataFrame, business_type: str) -> list[dict]:
-    """Use Gemini JSON mode to identify and calculate meaningful business KPIs."""
+    """Use Groq JSON mode to identify and calculate meaningful business KPIs."""
     context = _build_full_document_context(df)
 
-    parsed = _call_gemini_json(
+    parsed = _call_groq_json(
         system_prompt=(
             "You are a senior business analyst. Given this dataset, identify the most "
             "important business KPIs (Key Performance Indicators) relevant to this data.\n\n"
@@ -351,13 +359,13 @@ def ai_full_analysis(
     kpis: list[dict],
 ) -> dict[str, Any]:
     """
-    Use Gemini JSON mode to perform a full business analysis in one call.
+    Use Groq JSON mode to perform a full business analysis in one call.
     Returns: {summary, insights, recommendations, trends}
     """
     context = _build_full_document_context(df)
     kpi_text = "\n".join(f"  - {k['name']}: {k['value']}" for k in kpis)
 
-    parsed = _call_gemini_json(
+    parsed = _call_groq_json(
         system_prompt=(
             "You are a world-class business analyst consultant. "
             "A client has uploaded their business data. Your job is to:\n"
@@ -412,7 +420,7 @@ def _fallback_full_analysis(
     business_type: str,
     kpis: list[dict],
 ) -> dict[str, Any]:
-    """Rich rule-based fallback when Gemini is not available."""
+    """Rich rule-based fallback when Groq is not available."""
     numeric_cols = [c for c in df.columns if df[c].dtype in (pl.Float64, pl.Float32, pl.Int64, pl.Int32)]
     text_cols = [c for c in df.columns if df[c].dtype == pl.Utf8]
 
@@ -528,8 +536,8 @@ def _fallback_full_analysis(
 # ---------------------------------------------------------------------------
 
 def generate_chat_response(question: str, context: str, business_type: str) -> str:
-    """Generate a chat answer about analysis data using Gemini."""
-    result = _call_gemini(
+    """Generate a chat answer about analysis data using Groq."""
+    result = _call_groq(
         system_prompt=(
             "You are a friendly and expert business data analyst assistant. "
             f"You are helping analyze a {business_type} business. "

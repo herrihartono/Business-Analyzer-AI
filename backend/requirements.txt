@@ -9,7 +9,7 @@ pandas
 openpyxl
 pdfplumber
 python-docx
-google-generativeai
+groq
 sqlalchemy[asyncio]
 aiosqlite
 asyncpg

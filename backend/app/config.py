@@ -11,7 +11,7 @@ if env_path.exists():
     load_dotenv(env_path)
 
 REQUIRED_ENV_VARS = {
-    "GEMINI_API_KEY": "Google AI Studio API key (https://aistudio.google.com/apikey)",
+    "GROQ_API_KEY": "Groq API key (https://console.groq.com/keys)",
 }
 
 OPTIONAL_ENV_VARS = {
@@ -19,15 +19,15 @@ OPTIONAL_ENV_VARS = {
     "REDIS_URL": "Redis connection string (leave empty to disable caching)",
     "SECRET_KEY": "Secret key for signing tokens",
     "ALLOWED_ORIGINS": "Comma-separated allowed CORS origins",
-    "GEMINI_MODEL": "Gemini model name (default: gemini-2.0-flash)",
+    "GROQ_MODEL": "Groq model name (default: llama-3.3-70b-versatile)",
 }
 
 
 class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./smartbiz.db"
     redis_url: str = ""
-    gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.3-70b-versatile"
     secret_key: str = "change-me"
     upload_dir: str = "uploads"
     allowed_origins: str = "http://localhost:3000"
