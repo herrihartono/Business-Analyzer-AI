@@ -308,7 +308,8 @@ def ai_calculate_kpis(df: pl.DataFrame, business_type: str) -> list[dict]:
             '  "type": "<one of: currency, number, percentage, count>",\n'
             '  "icon": "<one of: dollar, trending, hash, percent, rows, columns, sum>",\n'
             '  "description": "<1 sentence explaining what this KPI means>"\n\n'
-            "IMPORTANT: Calculate real values from the data provided. Do NOT make up numbers."
+            "IMPORTANT: Calculate real values from the data provided. Do NOT make up numbers.\n"
+            "Assume all monetary values are in Indonesian Rupiah (IDR) unless specified otherwise."
         ),
         user_prompt=f"Business Type: {business_type}\n\n{context}",
     )
@@ -398,7 +399,8 @@ def ai_full_analysis(
             "- Jangan beri motivasi kosong, fokus pada fakta dan dampak nyata\n"
             "- Jika ada masalah serius, katakan secara langsung\n"
             "- Semua teks HARUS dalam Bahasa Indonesia\n"
-            "- Jangan gunakan placeholder, semua analisis berdasarkan data aktual yang diberikan"
+            "- Jangan gunakan placeholder, semua analisis berdasarkan data aktual yang diberikan\n"
+            "- Semua nilai uang atau mata uang HARUS secara eksplisit diformat dalam Rupiah (IDR)"
         ),
         user_prompt=(
             f"Tipe Bisnis: {business_type}\n\n"
@@ -552,6 +554,7 @@ def generate_chat_response(question: str, context: str, business_type: str) -> s
             "Jika ada masalah serius dalam data, katakan secara langsung. "
             "Berikan saran yang bisa langsung dieksekusi jika relevan. "
             "Gunakan Bahasa Indonesia yang jelas, tegas, dan profesional. "
+            "Semua nilai uang atau mata uang HARUS diformat dalam Rupiah (IDR). "
             "Jawab dengan ringkas namun substansial (2-5 kalimat)."
         ),
         user_prompt=f"DATA ANALISIS:\n{context}\n\nPERTANYAAN: {question}",

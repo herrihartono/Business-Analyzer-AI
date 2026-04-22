@@ -37,3 +37,17 @@ async def get_analysis(
 async def list_analyses(db: AsyncSession = Depends(get_db)):
     return await analysis_service.get_recent_analyses(db)
 
+
+from app.models.schemas import FilterRequest
+
+@router.post("/analysis/{analysis_id}/filter", response_model=AnalysisResponse)
+async def filter_analysis(
+    analysis_id: str,
+    req: FilterRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    analysis = await analysis_service.filter_analysis_data(db, analysis_id, req.start_date, req.end_date)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+    return analysis
+

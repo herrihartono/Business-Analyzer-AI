@@ -41,6 +41,11 @@ class AnalyzeRequest(BaseModel):
     upload_id: str
 
 
+class FilterRequest(BaseModel):
+    start_date: str | None = None
+    end_date: str | None = None
+
+
 class ChatRequest(BaseModel):
     analysis_id: str
     question: str

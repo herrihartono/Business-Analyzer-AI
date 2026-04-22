@@ -80,4 +80,68 @@ class AnalysisService:
     async def get_recent_analyses(self, db: AsyncSession, limit: int = 50) -> list[AnalysisResult]:
         return await analysis_repo.get_recent_analyses(db, limit=limit)
 
+    async def filter_analysis_data(
+        self, db: AsyncSession, analysis_id: str, start_date: str | None, end_date: str | None
+    ) -> dict | AnalysisResult | None:
+        analysis = await analysis_repo.get(db, id=analysis_id)
+        if not analysis:
+            return None
+
+        if not start_date and not end_date:
+            return analysis
+
+        upload = await upload_repo.get(db, id=analysis.upload_id)
+        if not upload:
+            return analysis
+
+        try:
+            import polars as pl
+            from app.services.ai_engine import _fallback_kpis
+            
+            df = parse_file(upload.filename)
+            df, _ = clean_dataframe(df)
+
+            date_cols = [c for c in df.columns if df[c].dtype in (pl.Date, pl.Datetime)]
+            if not date_cols:
+                return analysis
+            
+            date_col = date_cols[0]
+            
+            if start_date:
+                try:
+                    df = df.filter(pl.col(date_col) >= datetime.strptime(start_date, "%Y-%m-%d"))
+                except ValueError:
+                    pass
+            if end_date:
+                try:
+                    df = df.filter(pl.col(date_col) <= datetime.strptime(end_date, "%Y-%m-%d"))
+                except ValueError:
+                    pass
+            
+            charts = generate_charts(df, analysis.business_type or "General")
+            kpis = _fallback_kpis(df, analysis.business_type or "General")
+            preview = dataframe_preview(df)
+            
+            result_dict = {
+                "id": analysis.id,
+                "upload_id": analysis.upload_id,
+                "status": analysis.status,
+                "business_type": analysis.business_type,
+                "summary": analysis.summary,
+                "insights": analysis.insights,
+                "recommendations": analysis.recommendations,
+                "kpis": kpis,
+                "charts": charts,
+                "data_corrections": analysis.data_corrections,
+                "raw_data_preview": preview,
+                "column_stats": analysis.column_stats,
+                "created_at": analysis.created_at,
+                "completed_at": analysis.completed_at,
+            }
+            return result_dict
+            
+        except Exception as e:
+            traceback.print_exc()
+            return analysis
+
 analysis_service = AnalysisService()
