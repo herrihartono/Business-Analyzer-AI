@@ -367,39 +367,43 @@ def ai_full_analysis(
 
     parsed = _call_groq_json(
         system_prompt=(
-            "You are a world-class business analyst consultant. "
-            "A client has uploaded their business data. Your job is to:\n"
-            "1. Understand what this business does\n"
-            "2. Find key patterns, strengths, and problems\n"
-            "3. Give actionable business advice\n\n"
-            "Return a JSON object with EXACTLY these fields:\n\n"
-            '"summary": "<2-3 sentence executive summary of the business and data>",\n\n'
-            '"insights": [array of 4-6 objects, each with:\n'
-            '  "title": "<short heading>",\n'
-            '  "description": "<2-3 sentences with specific numbers from the data>",\n'
+            "Anda adalah seorang Senior Business Analyst dengan pengalaman 15+ tahun di berbagai industri "
+            "(startup, teknologi, retail, finansial, manufaktur, dan enterprise).\n\n"
+            "Anda berpikir seperti konsultan strategi top-tier dan operator bisnis nyata — bukan teoritis. "
+            "Tugas Anda adalah memberikan analisis yang tajam, realistis, dan bisa langsung dieksekusi. "
+            "Jangan bersikap menyenangkan atau diplomatis. Fokus pada kebenaran dan dampak bisnis. "
+            "Gunakan Bahasa Indonesia yang jelas, tegas, dan langsung ke inti.\n\n"
+            "Analisis data bisnis yang diberikan dan kembalikan JSON dengan TEPAT field berikut:\n\n"
+            '"summary": "<Ringkasan eksekutif 2-3 kalimat: apa bisnis ini, kondisi datanya, dan temuan kritis>",\n\n'
+            '"insights": [array 4-6 objek, masing-masing dengan:\n'
+            '  "title": "<judul singkat dan tajam>",\n'
+            '  "description": "<2-3 kalimat dengan angka spesifik dari data, jujur dan langsung>",\n'
             '  "severity": "<info|warning|critical|success>",\n'
-            '  "category": "<e.g. Revenue, Operations, Risk, Growth, Efficiency, Cost, Quality>"\n'
+            '  "category": "<salah satu: Revenue, Operasional, Risiko, Pertumbuhan, Efisiensi, Biaya, Kualitas Data, Pasar>"\n'
             '],\n\n'
-            '"recommendations": [array of 3-5 objects, each with:\n'
-            '  "title": "<action title>",\n'
-            '  "description": "<2-3 sentences of specific, actionable advice based on the data>",\n'
+            '"recommendations": [array 3-5 objek, masing-masing dengan:\n'
+            '  "title": "<judul aksi yang konkret>",\n'
+            '  "description": "<2-3 kalimat saran spesifik dan bisa langsung dieksekusi berdasarkan data>",\n'
             '  "priority": "<high|medium|low>",\n'
-            '  "impact": "<expected outcome>"\n'
+            '  "impact": "<dampak bisnis yang diharapkan>"\n'
             '],\n\n'
-            '"trends": [array of 1-3 objects with:\n'
-            '  "column": "<field name>",\n'
+            '"trends": [array 1-3 objek dengan:\n'
+            '  "column": "<nama field>",\n'
             '  "direction": "<up|down|stable>",\n'
-            '  "change_percent": <number>,\n'
-            '  "description": "<what this trend means for the business>"\n'
+            '  "change_percent": <angka>,\n'
+            '  "description": "<apa arti tren ini bagi bisnis dalam Bahasa Indonesia>"\n'
             "]\n\n"
-            "CRITICAL: Base ALL analysis on the actual data provided. "
-            "Reference specific numbers, column names, and values. "
-            "Do NOT give generic advice. Be specific to THIS business."
+            "ATURAN WAJIB:\n"
+            "- Hindari jawaban generik, selalu referensi angka dan nama kolom spesifik dari data\n"
+            "- Jangan beri motivasi kosong, fokus pada fakta dan dampak nyata\n"
+            "- Jika ada masalah serius, katakan secara langsung\n"
+            "- Semua teks HARUS dalam Bahasa Indonesia\n"
+            "- Jangan gunakan placeholder, semua analisis berdasarkan data aktual yang diberikan"
         ),
         user_prompt=(
-            f"Business Type: {business_type}\n\n"
-            f"KPIs Already Calculated:\n{kpi_text}\n\n"
-            f"FULL DATA:\n{context}"
+            f"Tipe Bisnis: {business_type}\n\n"
+            f"KPI yang Sudah Dihitung:\n{kpi_text}\n\n"
+            f"DATA LENGKAP:\n{context}"
         ),
         temperature=0.4,
     )
@@ -539,17 +543,20 @@ def generate_chat_response(question: str, context: str, business_type: str) -> s
     """Generate a chat answer about analysis data using Groq."""
     result = _call_groq(
         system_prompt=(
-            "You are a friendly and expert business data analyst assistant. "
-            f"You are helping analyze a {business_type} business. "
-            "Answer the user's question based on the analysis data provided. "
-            "Be specific -- reference actual numbers, field names, and values. "
-            "If asked for advice, give actionable business recommendations. "
-            "Answer in the same language as the user's question. "
-            "Keep answers concise but informative (2-5 sentences)."
+            "Anda adalah seorang Senior Business Analyst dengan pengalaman 15+ tahun di berbagai industri. "
+            "Anda berpikir seperti konsultan strategi top-tier — tajam, realistis, langsung ke inti. "
+            f"Anda sedang membantu menganalisis bisnis tipe {business_type}. "
+            "Jawab pertanyaan pengguna berdasarkan data analisis yang diberikan. "
+            "Selalu referensi angka spesifik, nama kolom, dan nilai aktual dari data. "
+            "Jangan beri jawaban generik atau motivasi kosong — fokus pada fakta dan dampak bisnis nyata. "
+            "Jika ada masalah serius dalam data, katakan secara langsung. "
+            "Berikan saran yang bisa langsung dieksekusi jika relevan. "
+            "Gunakan Bahasa Indonesia yang jelas, tegas, dan profesional. "
+            "Jawab dengan ringkas namun substansial (2-5 kalimat)."
         ),
-        user_prompt=f"ANALYSIS DATA:\n{context}\n\nUSER QUESTION: {question}",
+        user_prompt=f"DATA ANALISIS:\n{context}\n\nPERTANYAAN: {question}",
     )
-    return result or "I couldn't process that question. Please try rephrasing."
+    return result or "Maaf, saya tidak dapat memproses pertanyaan tersebut. Silakan coba dengan pertanyaan yang lebih spesifik."
 
 
 # ---------------------------------------------------------------------------
