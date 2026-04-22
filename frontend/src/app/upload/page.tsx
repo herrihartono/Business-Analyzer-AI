@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DropZone } from "@/components/upload/DropZone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,29 +13,28 @@ import { FileSpreadsheet, Play, Loader2 } from "lucide-react";
 
 export default function UploadPage() {
   const router = useRouter();
-  const [uploads, setUploads] = useState<UploadFile[]>([]);
-  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const loadUploads = () => {
-    getUploads().then(setUploads).catch(() => {});
-  };
+  const { data: uploads = [] } = useQuery<UploadFile[]>({
+    queryKey: ["uploads"],
+    queryFn: getUploads,
+  });
 
-  useEffect(() => {
-    loadUploads();
-  }, []);
+  const analyzeMutation = useMutation({
+    mutationFn: startAnalysis,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["uploads"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      router.push(`/analysis/${result.id}`);
+    },
+  });
 
   const handleUploaded = () => {
-    loadUploads();
+    queryClient.invalidateQueries({ queryKey: ["uploads"] });
   };
 
-  const handleAnalyze = async (uploadId: string) => {
-    setAnalyzingId(uploadId);
-    try {
-      const result = await startAnalysis(uploadId);
-      router.push(`/analysis/${result.id}`);
-    } catch {
-      setAnalyzingId(null);
-    }
+  const handleAnalyze = (uploadId: string) => {
+    analyzeMutation.mutate(uploadId);
   };
 
   return (
@@ -80,10 +79,10 @@ export default function UploadPage() {
                       <Button
                         size="sm"
                         onClick={() => handleAnalyze(file.id)}
-                        disabled={analyzingId === file.id}
+                        disabled={analyzeMutation.isPending && analyzeMutation.variables === file.id}
                         className="gap-1"
                       >
-                        {analyzingId === file.id ? (
+                        {analyzeMutation.isPending && analyzeMutation.variables === file.id ? (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         ) : (
                           <Play className="h-3 w-3" />

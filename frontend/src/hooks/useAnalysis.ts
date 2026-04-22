@@ -1,44 +1,36 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getAnalysis, getDashboard, type AnalysisResult, type DashboardData } from "@/lib/api";
 
 export function useAnalysis(id: string | null) {
-  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = useQuery<AnalysisResult, Error>({
+    queryKey: ["analysis", id],
+    queryFn: () => getAnalysis(id!),
+    enabled: !!id,
+    refetchInterval: (query) => {
+      // Auto-refetch every 3s if still processing
+      if (query.state.data?.status === "processing") return 3000;
+      return false;
+    },
+  });
 
-  const fetch = useCallback(async () => {
-    if (!id) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getAnalysis(id);
-      setAnalysis(data);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load analysis");
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return { analysis, loading, error, refetch: fetch };
+  return {
+    analysis: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
+  };
 }
 
 export function useDashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const query = useQuery<DashboardData, Error>({
+    queryKey: ["dashboard"],
+    queryFn: getDashboard,
+  });
 
-  useEffect(() => {
-    getDashboard()
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { data, loading };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+  };
 }
