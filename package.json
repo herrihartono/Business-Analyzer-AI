@@ -1,0 +1,20 @@
+{
+  "name": "business-analyzer-ai",
+  "version": "1.0.0",
+  "description": "AI-powered business analysis platform that automatically analyzes data from multiple file formats (Excel, CSV, PDF, DOCX) and delivers insights, recommendations, and interactive visualizations.",
+  "main": "index.js",
+ "scripts": {
+    "dev": "node src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/herrihartono/Business-Analyzer-AI.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/herrihartono/Business-Analyzer-AI/issues"
+  },
+  "homepage": "https://github.com/herrihartono/Business-Analyzer-AI#readme"
+}
