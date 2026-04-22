@@ -34,7 +34,17 @@ def _parse_csv(path: str) -> pl.DataFrame:
 
 
 def _parse_excel(path: str) -> pl.DataFrame:
-    return pl.read_excel(path, infer_schema_length=1000)
+    df = pl.read_excel(path, infer_schema_length=1000)
+    for col in df.columns:
+        if df[col].dtype == pl.Utf8:
+            try:
+                df = df.with_columns(pl.col(col).str.to_datetime(strict=False).alias(col))
+            except Exception:
+                try:
+                    df = df.with_columns(pl.col(col).str.to_date(strict=False).alias(col))
+                except Exception:
+                    pass
+    return df
 
 
 def _parse_pdf(path: str) -> pl.DataFrame:

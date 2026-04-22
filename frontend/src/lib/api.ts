@@ -70,6 +70,23 @@ export async function getDashboard(): Promise<DashboardData> {
   return data;
 }
 
+export async function getAnalyses(): Promise<AnalysisResult[]> {
+  const { data } = await api.get<AnalysisResult[]>("/api/analyses");
+  return data;
+}
+
+export async function filterAnalysis(
+  analysisId: string,
+  startDate: string | null,
+  endDate: string | null
+): Promise<AnalysisResult> {
+  const { data } = await api.post<AnalysisResult>(
+    `/api/analysis/${analysisId}/filter`,
+    { start_date: startDate, end_date: endDate }
+  );
+  return data;
+}
+
 export async function sendChatMessage(
   analysisId: string,
   question: string
