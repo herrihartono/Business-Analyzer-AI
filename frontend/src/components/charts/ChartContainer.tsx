@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SmartLineChart } from "./LineChart";
 import { SmartBarChart } from "./BarChart";
 import { SmartPieChart } from "./PieChart";
+import { isCurrencyFieldName } from "@/lib/utils";
+
+type ValueFormat = "currency" | "number";
 
 interface ChartConfig {
   type: string;
@@ -14,6 +17,7 @@ interface ChartConfig {
   dataKeys?: string[];
   dataKey?: string;
   nameKey?: string;
+  valueFormat?: ValueFormat;
 }
 
 interface Props {
@@ -22,6 +26,14 @@ interface Props {
 
 export function ChartContainer({ charts }: Props) {
   if (!charts || charts.length === 0) return null;
+
+  const resolveValueFormat = (chart: ChartConfig): ValueFormat => {
+    if (chart.valueFormat) return chart.valueFormat;
+
+    const keys = [chart.title, ...(chart.dataKeys || []), chart.dataKey || ""];
+    const hasCurrencySignal = keys.some((key) => isCurrencyFieldName(key));
+    return hasCurrencySignal ? "currency" : "number";
+  };
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -42,6 +54,7 @@ export function ChartContainer({ charts }: Props) {
                   data={chart.data}
                   xKey={chart.xKey || "index"}
                   dataKeys={chart.dataKeys || []}
+                  valueFormat={resolveValueFormat(chart)}
                 />
               )}
               {chart.type === "bar" && (
@@ -49,6 +62,7 @@ export function ChartContainer({ charts }: Props) {
                   data={chart.data}
                   xKey={chart.xKey || "name"}
                   dataKeys={chart.dataKeys || []}
+                  valueFormat={resolveValueFormat(chart)}
                 />
               )}
               {chart.type === "pie" && (
@@ -56,6 +70,7 @@ export function ChartContainer({ charts }: Props) {
                   data={chart.data}
                   dataKey={chart.dataKey || "value"}
                   nameKey={chart.nameKey || "name"}
+                  valueFormat={resolveValueFormat(chart)}
                 />
               )}
             </CardContent>

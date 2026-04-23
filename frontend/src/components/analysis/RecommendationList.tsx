@@ -9,6 +9,7 @@ interface Recommendation {
   description: string;
   priority: string;
   impact: string;
+  sourceLabel?: string;
 }
 
 interface Props {
@@ -47,6 +48,13 @@ export function RecommendationList({ recommendations }: Props) {
               </div>
               <p className="mt-1 text-sm text-muted-foreground">{rec.description}</p>
               <p className="mt-2 text-xs font-medium text-primary">Expected Impact: {rec.impact}</p>
+              {rec.sourceLabel ? (
+                <div className="mt-2">
+                  <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                    Source: {rec.sourceLabel}
+                  </span>
+                </div>
+              ) : null}
             </div>
           </div>
         </motion.div>

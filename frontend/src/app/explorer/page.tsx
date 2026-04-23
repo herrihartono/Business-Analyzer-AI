@@ -15,8 +15,8 @@ import {
 import { ArrowUpDown, Table2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { AnalysisResult } from "@/lib/api";
-import api from "@/lib/api";
+import { getAnalyses, type AnalysisResult } from "@/lib/api";
+import { formatTableValue } from "@/lib/utils";
 
 export default function ExplorerPage() {
   const [analyses, setAnalyses] = useState<AnalysisResult[]>([]);
@@ -26,10 +26,9 @@ export default function ExplorerPage() {
   const [globalFilter, setGlobalFilter] = useState("");
 
   useEffect(() => {
-    api
-      .get<AnalysisResult[]>("/api/analyses")
-      .then((res) => {
-        const completed = res.data.filter((a) => a.status === "completed");
+    getAnalyses()
+      .then((data) => {
+        const completed = data.filter((a) => a.status === "completed");
         setAnalyses(completed);
         if (completed.length > 0) setSelectedId(completed[0].id);
       })
@@ -60,7 +59,7 @@ export default function ExplorerPage() {
       ),
       cell: ({ getValue }) => {
         const val = getValue();
-        return <span className="max-w-[200px] truncate block">{String(val ?? "")}</span>;
+        return <span className="max-w-[200px] truncate block">{formatTableValue(val, key)}</span>;
       },
     }));
   }, [tableData]);

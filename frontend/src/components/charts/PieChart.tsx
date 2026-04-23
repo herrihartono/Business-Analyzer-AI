@@ -1,6 +1,7 @@
 "use client";
 
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
+import { formatCurrencyIDR, formatNumberID, parseNumericValue } from "@/lib/utils";
 
 const COLORS = [
   "hsl(221, 83%, 53%)",
@@ -17,9 +18,16 @@ interface Props {
   data: Record<string, unknown>[];
   dataKey: string;
   nameKey: string;
+  valueFormat?: "currency" | "number";
 }
 
-export function SmartPieChart({ data, dataKey, nameKey }: Props) {
+function formatChartValue(value: unknown, valueFormat: "currency" | "number"): string {
+  const numeric = parseNumericValue(value);
+  if (numeric === null) return String(value ?? "");
+  return valueFormat === "currency" ? formatCurrencyIDR(numeric) : formatNumberID(numeric);
+}
+
+export function SmartPieChart({ data, dataKey, nameKey, valueFormat = "number" }: Props) {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <PieChart>
@@ -38,10 +46,15 @@ export function SmartPieChart({ data, dataKey, nameKey }: Props) {
           ))}
         </Pie>
         <Tooltip
+          formatter={(value, name) => [formatChartValue(value, valueFormat), String(name)]}
+          itemStyle={{ color: "hsl(var(--foreground))" }}
+          labelStyle={{ color: "hsl(var(--foreground))" }}
           contentStyle={{
             backgroundColor: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
             borderRadius: "8px",
+            color: "hsl(var(--foreground))",
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.25)",
           }}
         />
         <Legend />

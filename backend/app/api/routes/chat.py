@@ -16,7 +16,15 @@ async def chat_with_data(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        response_data = await chat_service.get_chat_response(db, req.analysis_id, req.question)
+        if not req.analysis_id and not req.upload_id:
+            raise HTTPException(status_code=400, detail="Either analysis_id or upload_id is required")
+
+        response_data = await chat_service.get_chat_response(
+            db,
+            question=req.question,
+            analysis_id=req.analysis_id,
+            upload_id=req.upload_id,
+        )
         return ChatResponse(**response_data)
     except ValueError as e:
         raise HTTPException(status_code=400 if "not yet completed" in str(e) else 404, detail=str(e))

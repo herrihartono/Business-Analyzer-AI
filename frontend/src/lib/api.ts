@@ -65,17 +65,25 @@ export async function getAnalysis(id: string): Promise<AnalysisResult> {
   return data;
 }
 
+export async function getAnalyses(uploadId?: string): Promise<AnalysisResult[]> {
+  const { data } = await api.get<AnalysisResult[]>("/api/analyses", {
+    params: uploadId ? { upload_id: uploadId } : undefined,
+  });
+  return data;
+}
+
 export async function getDashboard(): Promise<DashboardData> {
   const { data } = await api.get<DashboardData>("/api/dashboard");
   return data;
 }
 
 export async function sendChatMessage(
-  analysisId: string,
-  question: string
+  question: string,
+  context?: { analysisId?: string; uploadId?: string }
 ): Promise<{ answer: string; sources: string[] | null }> {
   const { data } = await api.post("/api/chat", {
-    analysis_id: analysisId,
+    analysis_id: context?.analysisId,
+    upload_id: context?.uploadId,
     question,
   });
   return data;

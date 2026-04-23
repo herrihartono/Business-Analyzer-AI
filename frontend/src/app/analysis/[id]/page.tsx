@@ -10,8 +10,8 @@ import { ChartContainer } from "@/components/charts/ChartContainer";
 import { InsightCard } from "@/components/analysis/InsightCard";
 import { RecommendationList } from "@/components/analysis/RecommendationList";
 import { AnomalyAlert } from "@/components/analysis/AnomalyAlert";
-import { ChatDrawer } from "@/components/analysis/ChatDrawer";
 import { useAnalysis } from "@/hooks/useAnalysis";
+import { formatTableValue } from "@/lib/utils";
 
 export default function AnalysisDetailPage() {
   const params = useParams();
@@ -100,9 +100,9 @@ export default function AnalysisDetailPage() {
                 <tbody>
                   {(analysis.raw_data_preview as Record<string, unknown>[]).slice(0, 20).map((row, i) => (
                     <tr key={i} className="border-b transition-colors hover:bg-muted/30">
-                      {Object.values(row).map((val, j) => (
+                      {Object.entries(row).map(([col, val], j) => (
                         <td key={j} className="px-4 py-2">
-                          {String(val ?? "")}
+                          {formatTableValue(val, col)}
                         </td>
                       ))}
                     </tr>
@@ -120,7 +120,6 @@ export default function AnalysisDetailPage() {
         </TabsContent>
       </Tabs>
 
-      {analysis.status === "completed" && id && <ChatDrawer analysisId={id} />}
     </div>
   );
 }

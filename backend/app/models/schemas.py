@@ -47,7 +47,8 @@ class FilterRequest(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    analysis_id: str
+    analysis_id: str | None = None
+    upload_id: str | None = None
     question: str
 
 

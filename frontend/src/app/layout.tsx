@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { ChatDrawer } from "@/components/analysis/ChatDrawer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <main className="flex-1 overflow-y-auto p-6">{children}</main>
               </div>
             </div>
+            <ChatDrawer />
           </ThemeProvider>
         </QueryProvider>
       </body>

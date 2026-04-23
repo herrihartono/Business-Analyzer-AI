@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { DollarSign, TrendingUp, Hash, Percent, Rows3, Columns3, Calculator } from "lucide-react";
+import { formatCurrencyIDR, formatNumberID } from "@/lib/utils";
 
 const iconMap: Record<string, React.ElementType> = {
   dollar: DollarSign,
@@ -22,9 +23,9 @@ interface KpiCardProps {
 }
 
 function formatKpiValue(value: number, type: string): string {
-  if (type === "currency") return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-  if (type === "percentage") return `${value}%`;
-  if (type === "count" || type === "number") return value.toLocaleString("en-US");
+  if (type === "currency") return formatCurrencyIDR(value);
+  if (type === "percentage") return `${formatNumberID(value)}%`;
+  if (type === "count" || type === "number") return formatNumberID(value);
   return String(value);
 }
 

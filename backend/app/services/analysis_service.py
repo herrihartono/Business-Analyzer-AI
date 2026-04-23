@@ -77,8 +77,13 @@ class AnalysisService:
     async def get_analysis_by_id(self, db: AsyncSession, analysis_id: str) -> AnalysisResult | None:
         return await analysis_repo.get(db, id=analysis_id)
 
-    async def get_recent_analyses(self, db: AsyncSession, limit: int = 50) -> list[AnalysisResult]:
-        return await analysis_repo.get_recent_analyses(db, limit=limit)
+    async def get_recent_analyses(
+        self,
+        db: AsyncSession,
+        limit: int = 50,
+        upload_id: str | None = None,
+    ) -> list[AnalysisResult]:
+        return await analysis_repo.get_recent_analyses(db, limit=limit, upload_id=upload_id)
 
     async def filter_analysis_data(
         self, db: AsyncSession, analysis_id: str, start_date: str | None, end_date: str | None

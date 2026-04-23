@@ -16,10 +16,11 @@ interface Props {
   description: string;
   severity: string;
   category: string;
+  sourceLabel?: string;
   index?: number;
 }
 
-export function InsightCard({ title, description, severity, category, index = 0 }: Props) {
+export function InsightCard({ title, description, severity, category, sourceLabel, index = 0 }: Props) {
   const config = severityConfig[severity as keyof typeof severityConfig] || severityConfig.info;
   const Icon = config.icon;
 
@@ -40,6 +41,13 @@ export function InsightCard({ title, description, severity, category, index = 0 
             <span className="text-xs text-muted-foreground">{category}</span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          {sourceLabel ? (
+            <div className="mt-2">
+              <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                Source: {sourceLabel}
+              </span>
+            </div>
+          ) : null}
         </div>
       </div>
     </motion.div>

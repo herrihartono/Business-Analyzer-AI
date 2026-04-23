@@ -34,8 +34,11 @@ async def get_analysis(
 
 
 @router.get("/analyses", response_model=list[AnalysisResponse])
-async def list_analyses(db: AsyncSession = Depends(get_db)):
-    return await analysis_service.get_recent_analyses(db)
+async def list_analyses(
+    upload_id: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    return await analysis_service.get_recent_analyses(db, upload_id=upload_id)
 
 
 from app.models.schemas import FilterRequest

@@ -2,18 +2,27 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.analysis import AnalysisResult
 from app.repositories.analysis import analysis_repo
+from app.repositories.upload import upload_repo
 from app.services.ai_engine import has_groq, generate_chat_response
 from app.services.redis_cache import get_cached_chat, set_cached_chat
 
 class ChatService:
-    async def get_chat_response(self, db: AsyncSession, analysis_id: str, question: str) -> dict:
-        analysis = await analysis_repo.get(db, id=analysis_id)
-        if not analysis:
-            raise ValueError("Analysis not found")
+    async def get_chat_response(
+        self,
+        db: AsyncSession,
+        question: str,
+        analysis_id: str | None = None,
+        upload_id: str | None = None,
+    ) -> dict:
+        analysis = await self._resolve_analysis_context(
+            db,
+            analysis_id=analysis_id,
+            upload_id=upload_id,
+        )
         if analysis.status != "completed":
             raise ValueError("Analysis not yet completed")
 
-        cached_answer = await get_cached_chat(analysis_id, question)
+        cached_answer = await get_cached_chat(analysis.id, question)
         if cached_answer:
             return {"answer": cached_answer, "sources": ["analysis_data", "cache"]}
 
@@ -24,9 +33,34 @@ class ChatService:
         else:
             answer = self._rule_based_answer(question, analysis)
 
-        await set_cached_chat(analysis_id, question, answer)
+        await set_cached_chat(analysis.id, question, answer)
 
         return {"answer": answer, "sources": ["analysis_data"]}
+
+    async def _resolve_analysis_context(
+        self,
+        db: AsyncSession,
+        analysis_id: str | None = None,
+        upload_id: str | None = None,
+    ) -> AnalysisResult:
+        if analysis_id:
+            analysis = await analysis_repo.get(db, id=analysis_id)
+            if not analysis:
+                raise ValueError("Analysis not found")
+            return analysis
+
+        if not upload_id:
+            raise ValueError("Analysis context is required")
+
+        upload = await upload_repo.get(db, id=upload_id)
+        if not upload:
+            raise ValueError("Upload not found")
+
+        analyses = await analysis_repo.get_recent_analyses(db, limit=1, upload_id=upload_id)
+        if not analyses:
+            raise ValueError("No analysis found for selected upload")
+
+        return analyses[0]
 
     def _build_chat_context(self, analysis: AnalysisResult) -> str:
         parts = [
