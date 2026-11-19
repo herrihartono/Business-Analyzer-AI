@@ -1,24 +1,31 @@
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.schemas import AnalyzeRequest, AnalysisResponse
+from app.models.schemas import AnalyzeRequest, AnalysisResponse, FilterRequest
 from app.services.analysis_service import analysis_service
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["analysis"])
 
 
 @router.post("/analyze", response_model=AnalysisResponse)
 async def create_analysis(
     req: AnalyzeRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        analysis = await analysis_service.perform_analysis(db, req.upload_id)
+        analysis, is_done = await analysis_service.create_analysis_record(db, req.upload_id)
+        if not is_done:
+            # Dispatch analysis pipeline to background worker
+            background_tasks.add_task(analysis_service.run_pipeline, analysis.id, req.upload_id)
         return analysis
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
+        logger.error("Error creating analysis for upload %s: %s", req.upload_id, e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
@@ -41,8 +48,6 @@ async def list_analyses(
     return await analysis_service.get_recent_analyses(db, upload_id=upload_id)
 
 
-from app.models.schemas import FilterRequest
-
 @router.post("/analysis/{analysis_id}/filter", response_model=AnalysisResponse)
 async def filter_analysis(
     analysis_id: str,
@@ -53,4 +58,3 @@ async def filter_analysis(
     if not analysis:
         raise HTTPException(status_code=404, detail="Analysis not found")
     return analysis
-

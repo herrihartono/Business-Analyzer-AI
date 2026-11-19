@@ -145,6 +145,17 @@ async def set_cached_llm(system_prompt: str, user_prompt: str, response: str) ->
     await _set(key, {"response": response}, TTL_LLM)
 
 
+async def get_cached_llm_json(system_prompt: str, user_prompt: str) -> Any | None:
+    key = f"llm_json:{_hash_key(system_prompt, user_prompt)}"
+    result = await _get(key)
+    return result.get("data") if result else None
+
+
+async def set_cached_llm_json(system_prompt: str, user_prompt: str, data: Any) -> None:
+    key = f"llm_json:{_hash_key(system_prompt, user_prompt)}"
+    await _set(key, {"data": data}, TTL_LLM)
+
+
 # ── Dashboard / stats cache ─────────────────────────────────────
 
 async def get_cached_dashboard() -> dict | None:

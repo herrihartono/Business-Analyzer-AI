@@ -19,7 +19,7 @@ OPTIONAL_ENV_VARS = {
     "REDIS_URL": "Redis connection string (leave empty to disable caching)",
     "SECRET_KEY": "Secret key for signing tokens",
     "ALLOWED_ORIGINS": "Comma-separated allowed CORS origins",
-    "GROQ_MODEL": "Groq model name (default: llama-3.3-70b-versatile)",
+    "GROQ_MODEL": "Groq model name (default: openai/gpt-oss-120b)",
 }
 
 
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./smartbiz.db"
     redis_url: str = ""
     groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "openai/gpt-oss-120b"
     secret_key: str = "change-me"
     upload_dir: str = "uploads"
     allowed_origins: str = "http://localhost:3000"

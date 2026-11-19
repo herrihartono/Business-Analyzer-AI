@@ -29,7 +29,7 @@ class ChatService:
         context = self._build_chat_context(analysis)
 
         if has_groq():
-            answer = generate_chat_response(question, context, analysis.business_type)
+            answer = await generate_chat_response(question, context, analysis.business_type or "General")
         else:
             answer = self._rule_based_answer(question, analysis)
 

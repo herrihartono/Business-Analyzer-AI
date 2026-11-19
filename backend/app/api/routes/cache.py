@@ -23,7 +23,7 @@ async def flush_cache():
         return {"flushed": 0, "message": "Redis not connected"}
 
     total = 0
-    for prefix in ("analysis:*", "chat:*", "llm:*", "dashboard:*"):
+    for prefix in ("analysis:*", "chat:*", "llm:*", "llm_json:*", "dashboard:*"):
         total += await _delete_pattern(prefix)
 
     return {"flushed": total, "message": f"Cleared {total} cached entries"}

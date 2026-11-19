@@ -10,10 +10,10 @@ services:
     envVars:
       - key: DATABASE_URL
         value: sqlite+aiosqlite:///./smartbiz.db
-      - key: GEMINI_API_KEY
+      - key: GROQ_API_KEY
         sync: false
-      - key: GEMINI_MODEL
-        value: gemini-2.0-flash
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
       - key: REDIS_URL
         value: ""
       - key: SECRET_KEY
