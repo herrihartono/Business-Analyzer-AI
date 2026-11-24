@@ -10,11 +10,10 @@ import {
   RotateCcw,
   Sparkles,
   ChevronDown,
-  X,
-  ArrowRight,
 } from "lucide-react";
 import { InsightCard } from "@/components/analysis/InsightCard";
 import { RecommendationList } from "@/components/analysis/RecommendationList";
+import { DateRangeCalendarPicker } from "@/components/analysis/DateRangeCalendarPicker";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -40,6 +39,15 @@ export default function InsightsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Most recent date in datasets to orient the calendar
+  const defaultMonthDate = useMemo(() => {
+    if (analyses.length > 0) {
+      const firstDate = analyses[0]?.created_at || analyses[0]?.upload?.created_at;
+      if (firstDate) return firstDate.split("T")[0];
+    }
+    return undefined;
+  }, [analyses]);
 
   // Filter analyses based on source and date range
   const filteredAnalyses = useMemo(() => {
@@ -147,7 +155,7 @@ export default function InsightsPage() {
         </div>
       </motion.div>
 
-      {/* Responsive Filter Toolbar */}
+      {/* Responsive Filter Toolbar with Interactive Calendar */}
       <div className="glass rounded-xl p-3 sm:p-4 border border-border/50 shadow-sm space-y-3">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
@@ -178,42 +186,17 @@ export default function InsightsPage() {
               </div>
             </div>
 
-            {/* 2. Filter Date Range Unified */}
-            <div className="flex items-center gap-2 h-10 rounded-lg border border-input bg-background/80 px-3 shadow-sm transition-colors focus-within:ring-2 focus-within:ring-ring w-full sm:w-auto">
-              <Calendar className="h-4 w-4 text-primary shrink-0" />
-              <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-transparent text-xs sm:text-sm border-0 p-0 outline-none w-[110px] sm:w-[125px] text-foreground focus:ring-0 cursor-pointer"
-                  placeholder="Mulai"
-                  title="Tanggal Mulai"
-                />
-                <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0 opacity-70" />
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-transparent text-xs sm:text-sm border-0 p-0 outline-none w-[110px] sm:w-[125px] text-foreground focus:ring-0 cursor-pointer"
-                  placeholder="Selesai"
-                  title="Tanggal Selesai"
-                />
-              </div>
-              {(startDate || endDate) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStartDate("");
-                    setEndDate("");
-                  }}
-                  className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground shrink-0 transition-colors"
-                  title="Hapus rentang tanggal"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
+            {/* 2. Interactive Calendar Date Range Picker */}
+            <DateRangeCalendarPicker
+              startDate={startDate}
+              endDate={endDate}
+              onChange={({ start, end }) => {
+                setStartDate(start);
+                setEndDate(end);
+              }}
+              defaultMonthDate={defaultMonthDate}
+              className="w-full sm:w-auto"
+            />
           </div>
 
           {/* 3. Severity Filter Pills & Reset */}
