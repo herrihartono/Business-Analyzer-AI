@@ -7,7 +7,6 @@ import {
   ChevronRight,
   X,
   ChevronDown,
-  RotateCcw,
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -245,15 +244,15 @@ export function DateRangeCalendarPicker({
   const hasSelection = Boolean(startDate || endDate);
 
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div ref={containerRef} className={`relative w-full ${className}`}>
       {/* Responsive Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full sm:w-auto min-w-[200px] h-10 flex items-center justify-between gap-2 px-3 rounded-lg border text-xs sm:text-sm shadow-sm transition-all outline-none focus:ring-2 focus:ring-ring ${
+        className={`w-full h-10 flex items-center justify-between gap-2 px-3 rounded-lg border text-xs sm:text-sm shadow-sm transition-all outline-none focus:ring-2 focus:ring-ring ${
           hasSelection
-            ? "border-primary/50 bg-primary/5 text-foreground font-medium"
-            : "border-input bg-background/80 text-muted-foreground hover:bg-background"
+            ? "border-primary/60 bg-primary/10 text-foreground font-medium"
+            : "border-input bg-background/90 text-muted-foreground hover:bg-background"
         }`}
       >
         <div className="flex items-center gap-2 truncate min-w-0">
@@ -278,15 +277,15 @@ export function DateRangeCalendarPicker({
         </div>
       </button>
 
-      {/* Popover Calendar Container */}
+      {/* Popover Calendar Container - 100% OPAQUE & SAFE POSITIONING */}
       {isOpen && (
-        <div className="absolute top-full mt-2 left-0 sm:left-auto right-auto z-50 w-[300px] sm:w-[330px] rounded-xl border border-border bg-popover/95 backdrop-blur-md p-3.5 shadow-xl animate-in fade-in-0 zoom-in-95">
+        <div className="absolute top-full mt-2 right-0 z-50 w-[310px] sm:w-[325px] max-w-[calc(100vw-2rem)] rounded-xl border border-border/80 bg-card dark:bg-zinc-950 text-card-foreground shadow-2xl p-3 sm:p-3.5 animate-in fade-in-0 zoom-in-95">
           {/* Quick Preset Chips */}
-          <div className="flex flex-wrap items-center gap-1.5 pb-3 border-b border-border/50 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 pb-2.5 border-b border-border/50 text-xs">
             <button
               type="button"
               onClick={() => applyPreset("dataApril2026")}
-              className="px-2 py-1 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors"
+              className="px-2 py-1 rounded-md bg-primary/15 text-primary font-medium hover:bg-primary/25 transition-colors"
             >
               Apr 2026 (Data)
             </button>
@@ -343,7 +342,7 @@ export function DateRangeCalendarPicker({
             {DAY_NAMES.map((name, i) => (
               <span
                 key={name}
-                className={`text-[11px] font-medium py-1 ${
+                className={`text-[11px] font-medium py-0.5 ${
                   i === 0 ? "text-destructive/80" : "text-muted-foreground"
                 }`}
               >
@@ -390,7 +389,7 @@ export function DateRangeCalendarPicker({
                   <button
                     type="button"
                     onClick={() => handleDayClick(d)}
-                    className={`h-7 w-7 text-xs flex items-center justify-center rounded-lg transition-all ${
+                    className={`h-7 w-7 text-xs flex items-center justify-center rounded-lg transition-all mx-auto ${
                       isStart || isEnd
                         ? "bg-primary text-primary-foreground font-bold shadow-sm"
                         : isRangeMid || isHoverRange

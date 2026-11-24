@@ -146,7 +146,7 @@ export default function InsightsPage() {
               Wawasan bisnis dan rekomendasi AI dari dataset yang dianalisis
             </p>
           </div>
-          <div className="self-start sm:self-auto flex items-center gap-2 text-xs sm:text-sm text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-lg border">
+          <div className="self-start sm:self-auto flex items-center gap-2 text-xs sm:text-sm text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-lg border shrink-0">
             <Sparkles className="h-4 w-4 text-primary shrink-0" />
             <span>
               <strong>{analyses.length}</strong> data dianalisis
@@ -155,92 +155,92 @@ export default function InsightsPage() {
         </div>
       </motion.div>
 
-      {/* Responsive Filter Toolbar with Interactive Calendar */}
-      <div className="glass rounded-xl p-3 sm:p-4 border border-border/50 shadow-sm space-y-3">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1 min-w-0">
-            {/* 1. Filter Sumber Data */}
-            <div className="relative w-full sm:w-64 lg:w-72 shrink-0">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-primary">
-                <FileText className="h-4 w-4" />
-              </div>
-              <select
-                value={selectedSource}
-                onChange={(e) => setSelectedSource(e.target.value)}
-                className="w-full h-10 rounded-lg border border-input bg-background/80 pl-9 pr-8 text-xs sm:text-sm shadow-sm transition-colors outline-none focus:ring-2 focus:ring-ring appearance-none truncate cursor-pointer"
-                title="Pilih Sumber Data"
-              >
-                <option value="all">Semua Sumber Data ({analyses.length})</option>
-                {analyses.map((a) => {
-                  const name = a.upload?.original_name || a.business_type || "Analisis";
-                  const dateStr = a.created_at ? formatDate(a.created_at) : "";
-                  return (
-                    <option key={a.id} value={a.id}>
-                      {name} {dateStr ? `(${dateStr})` : ""}
-                    </option>
-                  );
-                })}
-              </select>
-              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground">
-                <ChevronDown className="h-4 w-4" />
-              </div>
+      {/* Responsive Filter Toolbar */}
+      <div className="glass rounded-xl p-3 sm:p-4 border border-border/50 shadow-sm space-y-3.5">
+        {/* Row 1: Source Data Select and Date Range Calendar in a 2-col responsive grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* 1. Filter Sumber Data */}
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-primary">
+              <FileText className="h-4 w-4" />
             </div>
-
-            {/* 2. Interactive Calendar Date Range Picker */}
-            <DateRangeCalendarPicker
-              startDate={startDate}
-              endDate={endDate}
-              onChange={({ start, end }) => {
-                setStartDate(start);
-                setEndDate(end);
-              }}
-              defaultMonthDate={defaultMonthDate}
-              className="w-full sm:w-auto"
-            />
+            <select
+              value={selectedSource}
+              onChange={(e) => setSelectedSource(e.target.value)}
+              className="w-full h-10 rounded-lg border border-input bg-background/90 pl-9 pr-8 text-xs sm:text-sm shadow-sm transition-colors outline-none focus:ring-2 focus:ring-ring appearance-none truncate cursor-pointer"
+              title="Pilih Sumber Data"
+            >
+              <option value="all">Semua Sumber Data ({analyses.length} file)</option>
+              {analyses.map((a) => {
+                const name = a.upload?.original_name || a.business_type || "Analisis";
+                const dateStr = a.created_at ? formatDate(a.created_at) : "";
+                return (
+                  <option key={a.id} value={a.id}>
+                    {name} {dateStr ? `(${dateStr})` : ""}
+                  </option>
+                );
+              })}
+            </select>
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground">
+              <ChevronDown className="h-4 w-4" />
+            </div>
           </div>
 
-          {/* 3. Severity Filter Pills & Reset */}
-          <div className="flex items-center justify-between sm:justify-end gap-2 flex-wrap">
-            <div className="flex items-center gap-1 overflow-x-auto py-0.5 scrollbar-none">
-              {(["all", "critical", "warning", "info", "success"] as const).map((sev) => (
-                <button
-                  key={sev}
-                  type="button"
-                  onClick={() => setSeverityFilter(sev)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
-                    severityFilter === sev
-                      ? "bg-primary text-primary-foreground shadow-sm font-semibold"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  {sev === "all" ? "Semua" : sev.charAt(0).toUpperCase() + sev.slice(1)}
-                </button>
-              ))}
-            </div>
-
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetFilters}
-                className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive shrink-0"
-              >
-                <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                Reset
-              </Button>
-            )}
-          </div>
+          {/* 2. Interactive Calendar Date Range Picker */}
+          <DateRangeCalendarPicker
+            startDate={startDate}
+            endDate={endDate}
+            onChange={({ start, end }) => {
+              setStartDate(start);
+              setEndDate(end);
+            }}
+            defaultMonthDate={defaultMonthDate}
+            className="w-full"
+          />
         </div>
 
-        {/* Active Filters Summary Bar */}
+        {/* Row 2: Severity Filter & Reset Button */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/40">
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1 max-w-full scrollbar-none">
+            <span className="text-xs text-muted-foreground font-medium shrink-0 mr-1">Severity:</span>
+            {(["all", "critical", "warning", "info", "success"] as const).map((sev) => (
+              <button
+                key={sev}
+                type="button"
+                onClick={() => setSeverityFilter(sev)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all shrink-0 ${
+                  severityFilter === sev
+                    ? "bg-primary text-primary-foreground shadow-sm font-semibold"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {sev === "all" ? "Semua" : sev.charAt(0).toUpperCase() + sev.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={resetFilters}
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive shrink-0 ml-auto"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              Reset Filter
+            </Button>
+          )}
+        </div>
+
+        {/* Row 3: Active Filters Summary (only visible when filters active) */}
         {hasActiveFilters && (
-          <div className="pt-2 border-t border-border/40 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <div className="pt-2 border-t border-border/30 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="font-medium text-foreground/80">Filter:</span>
+              <span className="font-medium text-foreground/80">Aktif:</span>
               {selectedSource !== "all" && (
                 <Badge variant="secondary" className="gap-1 text-[11px] py-0.5">
                   <FileText className="h-3 w-3 text-primary" />
-                  <span className="max-w-[160px] truncate">
+                  <span className="max-w-[150px] truncate">
                     {selectedAnalysis?.upload?.original_name || selectedAnalysis?.business_type || "File Terpilih"}
                   </span>
                   <button
