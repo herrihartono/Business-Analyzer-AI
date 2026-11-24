@@ -33,6 +33,7 @@ class AnalysisResponse(BaseModel):
     column_stats: dict[str, Any] | None = None
     created_at: datetime
     completed_at: datetime | None = None
+    upload: UploadResponse | None = None
 
     model_config = {"from_attributes": True}
 

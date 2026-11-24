@@ -30,6 +30,7 @@ export interface AnalysisResult {
   column_stats: Record<string, unknown> | null;
   created_at: string;
   completed_at: string | null;
+  upload?: UploadFile | null;
 }
 
 export interface DashboardData {
