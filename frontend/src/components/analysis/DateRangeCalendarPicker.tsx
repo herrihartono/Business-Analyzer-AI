@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -8,6 +9,7 @@ import {
   X,
   ChevronDown,
   Check,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -44,7 +46,6 @@ export function DateRangeCalendarPicker({
   className = "",
 }: DateRangeCalendarPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // Initial focus month/year
   const initialDate = useMemo(() => {
@@ -80,21 +81,6 @@ export function DateRangeCalendarPicker({
       }
     }
   }, [isOpen, startDate, endDate, defaultMonthDate]);
-
-  // Click outside to close
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
 
   // Navigate months
   const prevMonth = () => {
@@ -155,9 +141,6 @@ export function DateRangeCalendarPicker({
       } else {
         setTempEnd(dateStr);
         setSelectingEnd(false);
-        // Automatically apply selection
-        onChange({ start: tempStart, end: dateStr });
-        setIsOpen(false);
       }
     }
   };
@@ -244,76 +227,99 @@ export function DateRangeCalendarPicker({
   const hasSelection = Boolean(startDate || endDate);
 
   return (
-    <div ref={containerRef} className={`relative w-full ${className}`}>
-      {/* Responsive Trigger Button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full h-10 flex items-center justify-between gap-2 px-3 rounded-lg border text-xs sm:text-sm shadow-sm transition-all outline-none focus:ring-2 focus:ring-ring ${
-          hasSelection
-            ? "border-primary/60 bg-primary/10 text-foreground font-medium"
-            : "border-input bg-background/90 text-muted-foreground hover:bg-background"
-        }`}
-      >
-        <div className="flex items-center gap-2 truncate min-w-0">
-          <CalendarIcon className={`h-4 w-4 shrink-0 ${hasSelection ? "text-primary" : "text-muted-foreground"}`} />
-          <span className="truncate">{triggerLabel}</span>
-        </div>
-        <div className="flex items-center gap-1 shrink-0 ml-1">
-          {hasSelection && (
-            <span
-              onClick={handleClear}
-              className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
-              title="Hapus rentang tanggal"
-            >
-              <X className="h-3.5 w-3.5" />
-            </span>
-          )}
-          <ChevronDown
-            className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
-              isOpen ? "rotate-180" : ""
+    <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
+      {/* Trigger Button in toolbar */}
+      <div className={`relative w-full ${className}`}>
+        <Dialog.Trigger asChild>
+          <button
+            type="button"
+            className={`w-full h-10 flex items-center justify-between gap-2 px-3 rounded-lg border text-xs sm:text-sm shadow-sm transition-all outline-none focus:ring-2 focus:ring-ring ${
+              hasSelection
+                ? "border-primary/60 bg-primary/10 text-foreground font-medium"
+                : "border-input bg-background/90 text-muted-foreground hover:bg-background"
             }`}
-          />
-        </div>
-      </button>
+          >
+            <div className="flex items-center gap-2 truncate min-w-0">
+              <CalendarIcon
+                className={`h-4 w-4 shrink-0 ${hasSelection ? "text-primary" : "text-muted-foreground"}`}
+              />
+              <span className="truncate">{triggerLabel}</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0 ml-1">
+              {hasSelection && (
+                <span
+                  onClick={handleClear}
+                  className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                  title="Hapus rentang tanggal"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </span>
+              )}
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
+            </div>
+          </button>
+        </Dialog.Trigger>
+      </div>
 
-      {/* Popover Calendar Container - 100% OPAQUE & SAFE POSITIONING */}
-      {isOpen && (
-        <div className="absolute top-full mt-2 right-0 z-50 w-[310px] sm:w-[325px] max-w-[calc(100vw-2rem)] rounded-xl border border-border/80 bg-card dark:bg-zinc-950 text-card-foreground shadow-2xl p-3 sm:p-3.5 animate-in fade-in-0 zoom-in-95">
+      {/* Rendered via Portal into document.body to NEVER be clipped or covered by subsequent DOM elements */}
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-200" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[101] w-[94vw] max-w-[360px] rounded-2xl border border-border/80 bg-card dark:bg-zinc-950 text-card-foreground shadow-2xl p-4 sm:p-5 outline-none animate-in fade-in-0 zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-border/50">
+            <div>
+              <Dialog.Title className="text-base font-semibold text-foreground">
+                Pilih Rentang Tanggal
+              </Dialog.Title>
+              <Dialog.Description className="text-xs text-muted-foreground mt-0.5">
+                Pilih tanggal awal dan akhir untuk filter data
+              </Dialog.Description>
+            </div>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                title="Tutup"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </Dialog.Close>
+          </div>
+
           {/* Quick Preset Chips */}
-          <div className="flex flex-wrap items-center gap-1.5 pb-2.5 border-b border-border/50 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 py-3 border-b border-border/50 text-xs">
             <button
               type="button"
               onClick={() => applyPreset("dataApril2026")}
-              className="px-2 py-1 rounded-md bg-primary/15 text-primary font-medium hover:bg-primary/25 transition-colors"
+              className="px-2.5 py-1 rounded-md bg-primary/15 text-primary font-medium hover:bg-primary/25 transition-colors"
             >
               Apr 2026 (Data)
             </button>
             <button
               type="button"
               onClick={() => applyPreset("last7")}
-              className="px-2 py-1 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+              className="px-2.5 py-1 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
             >
               7 Hari
             </button>
             <button
               type="button"
               onClick={() => applyPreset("last30")}
-              className="px-2 py-1 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+              className="px-2.5 py-1 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
             >
               30 Hari
             </button>
             <button
               type="button"
               onClick={() => applyPreset("all")}
-              className="px-2 py-1 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
+              className="px-2.5 py-1 rounded-md bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
             >
               Semua
             </button>
           </div>
 
           {/* Month/Year Navigation */}
-          <div className="flex items-center justify-between py-2">
+          <div className="flex items-center justify-between py-2.5">
             <button
               type="button"
               onClick={prevMonth}
@@ -323,7 +329,7 @@ export function DateRangeCalendarPicker({
               <ChevronLeft className="h-4 w-4" />
             </button>
 
-            <span className="text-sm font-semibold tracking-wide">
+            <span className="text-sm font-semibold tracking-wide text-foreground">
               {MONTH_NAMES[viewMonth]} {viewYear}
             </span>
 
@@ -361,20 +367,11 @@ export function DateRangeCalendarPicker({
               const d = item.dateStr;
               const isStart = tempStart === d;
               const isEnd = tempEnd === d;
-              const isRangeMid =
-                tempStart &&
-                tempEnd &&
-                d > tempStart &&
-                d < tempEnd;
+              const isRangeMid = tempStart && tempEnd && d > tempStart && d < tempEnd;
 
               // Hover effect when selecting end date
               const isHoverRange =
-                selectingEnd &&
-                tempStart &&
-                !tempEnd &&
-                hoverDate &&
-                d > tempStart &&
-                d <= hoverDate;
+                selectingEnd && tempStart && !tempEnd && hoverDate && d > tempStart && d <= hoverDate;
 
               return (
                 <div
@@ -404,40 +401,41 @@ export function DateRangeCalendarPicker({
             })}
           </div>
 
-          {/* Selection Hint & Footer */}
-          <div className="mt-3 pt-2.5 border-t border-border/50 flex items-center justify-between text-xs">
-            <span className="text-muted-foreground truncate max-w-[170px]">
+          {/* Footer with Selected Summary & Action Buttons */}
+          <div className="mt-4 pt-3 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="text-muted-foreground truncate max-w-[160px] text-[11px]">
               {selectingEnd
                 ? "Pilih tanggal akhir..."
                 : tempStart && tempEnd
                 ? `${formatDisplayDate(tempStart)} - ${formatDisplayDate(tempEnd)}`
                 : tempStart
                 ? `Mulai: ${formatDisplayDate(tempStart)}`
-                : "Klik tanggal mulai"}
+                : "Klik tanggal pada kalender"}
             </span>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={handleClear}
-                className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                className="h-8 px-2.5 text-xs text-muted-foreground hover:text-destructive"
               >
+                <RotateCcw className="h-3 w-3 mr-1" />
                 Reset
               </Button>
               <Button
                 size="sm"
                 onClick={handleApply}
                 disabled={!tempStart}
-                className="h-7 px-2.5 text-xs gap-1"
+                className="h-8 px-3 text-xs gap-1"
               >
-                <Check className="h-3 w-3" />
-                Pilih
+                <Check className="h-3.5 w-3.5" />
+                Terapkan
               </Button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

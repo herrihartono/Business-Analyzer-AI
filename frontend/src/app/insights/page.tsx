@@ -156,7 +156,7 @@ export default function InsightsPage() {
       </motion.div>
 
       {/* Responsive Filter Toolbar */}
-      <div className="glass rounded-xl p-3 sm:p-4 border border-border/50 shadow-sm space-y-3.5">
+      <div className="glass rounded-xl p-3 sm:p-4 border border-border/50 shadow-sm space-y-3.5 relative z-20">
         {/* Row 1: Source Data Select and Date Range Calendar in a 2-col responsive grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* 1. Filter Sumber Data */}
