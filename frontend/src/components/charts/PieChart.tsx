@@ -4,14 +4,14 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recha
 import { formatCurrencyIDR, formatNumberID, parseNumericValue } from "@/lib/utils";
 
 const COLORS = [
-  "hsl(221, 83%, 53%)",
-  "hsl(160, 60%, 45%)",
-  "hsl(30, 90%, 55%)",
-  "hsl(280, 60%, 55%)",
-  "hsl(340, 70%, 55%)",
-  "hsl(190, 70%, 45%)",
-  "hsl(50, 80%, 50%)",
-  "hsl(100, 50%, 45%)",
+  "hsl(162, 63%, 32%)",
+  "hsl(40, 76%, 57%)",
+  "hsl(8, 53%, 53%)",
+  "hsl(198, 45%, 46%)",
+  "hsl(282, 28%, 48%)",
+  "hsl(26, 55%, 48%)",
+  "hsl(130, 28%, 45%)",
+  "hsl(215, 35%, 52%)",
 ];
 
 interface Props {

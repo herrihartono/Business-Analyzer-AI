@@ -29,22 +29,22 @@ export function InsightCard({ title, description, severity, category, sourceLabe
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08 }}
-      className="glass rounded-xl p-5"
+      className="surface p-4 sm:p-5"
     >
       <div className="flex items-start gap-3">
         <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", config.bg)}>
           <Icon className={cn("h-5 w-5", config.color)} />
         </div>
         <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <h4 className="font-semibold">{title}</h4>
-            <span className="text-xs text-muted-foreground">{category}</span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+            <h4 className="font-semibold leading-6">{title}</h4>
+            <span className="shrink-0 text-xs text-muted-foreground">{category}</span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
           {sourceLabel ? (
             <div className="mt-2">
               <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                Source: {sourceLabel}
+                Sumber: {sourceLabel}
               </span>
             </div>
           ) : null}

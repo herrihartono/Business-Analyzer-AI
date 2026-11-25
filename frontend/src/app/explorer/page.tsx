@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
 import {
   useReactTable,
   getCoreRowModel,
@@ -12,7 +11,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Table2, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertCircle, ArrowUpDown, Table2, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getAnalyses, type AnalysisResult } from "@/lib/api";
@@ -24,6 +23,8 @@ export default function ExplorerPage() {
   const [loading, setLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [error, setError] = useState(false);
+  const [requestKey, setRequestKey] = useState(0);
 
   useEffect(() => {
     getAnalyses()
@@ -32,9 +33,9 @@ export default function ExplorerPage() {
         setAnalyses(completed);
         if (completed.length > 0) setSelectedId(completed[0].id);
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }, [requestKey]);
 
   const selected = analyses.find((a) => a.id === selectedId);
   const tableData = useMemo(
@@ -78,32 +79,46 @@ export default function ExplorerPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold tracking-tight">Data Explorer</h1>
-        <p className="text-muted-foreground">Browse and filter your analyzed data</p>
-      </motion.div>
+    <div className="page-shell min-w-0">
+      <section className="page-heading">
+        <div>
+          <h1>Lihat data lebih dekat.</h1>
+          <p>Cari nilai tertentu, urutkan kolom, dan periksa hasil normalisasi data.</p>
+        </div>
+      </section>
 
       {loading ? (
         <div className="h-64 animate-pulse rounded-xl bg-muted" />
+      ) : error ? (
+        <Card className="surface border-0 shadow-none">
+          <CardContent className="empty-state">
+            <AlertCircle className="h-10 w-10 text-destructive" />
+            <h3 className="mt-4 text-lg font-semibold">Data belum dapat dimuat</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Periksa layanan API, lalu coba lagi.</p>
+            <Button variant="outline" className="mt-5 gap-2 rounded-xl" onClick={() => { setError(false); setLoading(true); setRequestKey((key) => key + 1); }}>
+              <RefreshCw className="h-4 w-4" /> Coba lagi
+            </Button>
+          </CardContent>
+        </Card>
       ) : analyses.length === 0 ? (
-        <Card className="glass">
-          <CardContent className="flex flex-col items-center justify-center py-16">
+        <Card className="surface border-0 shadow-none">
+          <CardContent className="empty-state">
             <Table2 className="mb-4 h-12 w-12 text-muted-foreground" />
-            <h3 className="text-lg font-semibold">No data to explore</h3>
+            <h3 className="text-lg font-semibold">Belum ada data untuk dijelajahi</h3>
             <p className="text-sm text-muted-foreground">
-              Complete an analysis first to explore the data
+              Selesaikan satu analisis untuk melihat data di sini.
             </p>
           </CardContent>
         </Card>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
             {analyses.map((a) => (
               <Button
                 key={a.id}
                 variant={a.id === selectedId ? "default" : "outline"}
                 size="sm"
+                className="shrink-0 rounded-xl"
                 onClick={() => setSelectedId(a.id)}
               >
                 {a.business_type || a.id.slice(0, 8)}
@@ -111,22 +126,22 @@ export default function ExplorerPage() {
             ))}
           </div>
 
-          <Card className="glass">
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
+          <Card className="surface min-w-0 border-0 shadow-none">
+            <CardHeader className="flex flex-col items-stretch gap-3 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">
-                {selected?.business_type || "Data"} ({tableData.length} rows)
+                {selected?.business_type || "Data"} ({tableData.length} baris)
               </CardTitle>
               <input
                 type="text"
-                placeholder="Search all columns..."
+                placeholder="Cari di semua kolom..."
                 value={globalFilter}
                 onChange={(e) => setGlobalFilter(e.target.value)}
-                className="rounded-md border bg-background px-3 py-1.5 text-sm outline-none"
+                className="h-10 w-full rounded-xl border bg-background px-3 text-sm outline-none sm:w-64"
               />
             </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full text-sm">
+            <CardContent className="min-w-0">
+              <div className="max-w-full overflow-x-auto rounded-xl border">
+                <table className="w-full min-w-max text-sm">
                   <thead>
                     {table.getHeaderGroups().map((hg) => (
                       <tr key={hg.id} className="border-b bg-muted/50">
@@ -154,9 +169,9 @@ export default function ExplorerPage() {
                 </table>
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
+              <div className="mt-4 flex items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">
-                  Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+                  Halaman {table.getState().pagination.pageIndex + 1} dari {Math.max(table.getPageCount(), 1)}
                 </p>
                 <div className="flex gap-2">
                   <Button

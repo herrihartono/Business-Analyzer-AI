@@ -37,7 +37,7 @@ export function KpiCard({ name, value, type, icon, index = 0 }: KpiCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
-      className="glass rounded-xl p-5"
+      className="surface min-w-0 p-4 sm:p-5"
     >
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-muted-foreground">{name}</p>
@@ -45,7 +45,7 @@ export function KpiCard({ name, value, type, icon, index = 0 }: KpiCardProps) {
           <Icon className="h-5 w-5 text-primary" />
         </div>
       </div>
-      <p className="mt-2 text-2xl font-bold tracking-tight">{formatKpiValue(value, type)}</p>
+      <p className="data-number mt-3 break-words text-xl font-semibold tracking-[-0.03em] sm:text-2xl">{formatKpiValue(value, type)}</p>
     </motion.div>
   );
 }

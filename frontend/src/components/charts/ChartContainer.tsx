@@ -6,6 +6,7 @@ import { SmartLineChart } from "./LineChart";
 import { SmartBarChart } from "./BarChart";
 import { SmartPieChart } from "./PieChart";
 import { isCurrencyFieldName } from "@/lib/utils";
+import { BarChart3 } from "lucide-react";
 
 type ValueFormat = "currency" | "number";
 
@@ -25,7 +26,15 @@ interface Props {
 }
 
 export function ChartContainer({ charts }: Props) {
-  if (!charts || charts.length === 0) return null;
+  if (!charts || charts.length === 0) {
+    return (
+      <div className="surface empty-state">
+        <BarChart3 className="h-9 w-9 text-muted-foreground" />
+        <p className="mt-3 font-semibold">Belum ada grafik untuk data ini</p>
+        <p className="mt-1 text-sm text-muted-foreground">Insight tertulis tetap dapat dibaca pada tab berikutnya.</p>
+      </div>
+    );
+  }
 
   const resolveValueFormat = (chart: ChartConfig): ValueFormat => {
     if (chart.valueFormat) return chart.valueFormat;
@@ -36,7 +45,7 @@ export function ChartContainer({ charts }: Props) {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       {charts.map((chart, i) => (
         <motion.div
           key={i}
@@ -44,11 +53,11 @@ export function ChartContainer({ charts }: Props) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
         >
-          <Card className="glass">
+          <Card className="surface min-w-0 border-0 shadow-none">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{chart.title}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="min-w-0 overflow-hidden px-2 sm:px-6">
               {chart.type === "line" && (
                 <SmartLineChart
                   data={chart.data}

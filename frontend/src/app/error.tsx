@@ -18,17 +18,17 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="flex h-full w-full items-center justify-center p-6">
-      <Card className="w-full max-w-md glass border-destructive/20">
+    <div className="page-shell flex min-h-[60vh] items-center justify-center">
+      <Card className="surface w-full max-w-md border-destructive/20 shadow-none">
         <CardContent className="flex flex-col items-center justify-center space-y-6 pt-10 pb-8 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
             <AlertTriangle className="h-8 w-8 text-destructive" />
           </div>
           
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight">Something went wrong</h2>
+            <h2 className="text-2xl font-semibold tracking-[-0.03em]">Halaman belum dapat ditampilkan</h2>
             <p className="text-sm text-muted-foreground">
-              An unexpected error occurred while processing your request.
+              Terjadi kendala saat memproses permintaan Anda. Coba muat kembali halaman ini.
             </p>
           </div>
 
@@ -37,12 +37,12 @@ export default function GlobalError({
               variant="outline"
               onClick={() => window.location.href = '/'}
             >
-              Go to Dashboard
+              Ke ringkasan
             </Button>
             <Button
               onClick={() => reset()}
             >
-              Try again
+              Coba lagi
             </Button>
           </div>
         </CardContent>

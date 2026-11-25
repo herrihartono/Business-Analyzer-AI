@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { formatCurrencyIDR, formatNumberID, parseNumericValue } from "@/lib/utils";
 
-const COLORS = ["hsl(221, 83%, 53%)", "hsl(160, 60%, 45%)", "hsl(30, 90%, 55%)", "hsl(280, 60%, 55%)"];
+const COLORS = ["hsl(162, 63%, 32%)", "hsl(40, 76%, 57%)", "hsl(8, 53%, 53%)", "hsl(198, 45%, 46%)"];
 type ValueFormat = "currency" | "number";
 
 interface Props {

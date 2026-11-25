@@ -32,5 +32,7 @@ export function useDashboard() {
   return {
     data: query.data ?? null,
     loading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
   };
 }

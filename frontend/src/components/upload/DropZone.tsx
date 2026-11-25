@@ -65,8 +65,13 @@ export function DropZone({ onUploaded }: DropZoneProps) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected: (rejections) => {
+      const tooLarge = rejections.some((item) => item.errors.some((error) => error.code === "file-too-large"));
+      setErrorMessage(tooLarge ? "Ukuran setiap berkas maksimal 50 MB." : "Format berkas belum didukung.");
+    },
     accept: ACCEPTED_TYPES,
     multiple: true,
+    maxSize: 50 * 1024 * 1024,
   });
 
   return (
@@ -76,7 +81,7 @@ export function DropZone({ onUploaded }: DropZoneProps) {
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           className={cn(
-            "glass relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors",
+            "surface relative flex min-h-72 cursor-pointer flex-col items-center justify-center border-2 border-dashed px-5 py-10 text-center transition-colors sm:p-12",
             isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
           )}
         >
@@ -87,13 +92,13 @@ export function DropZone({ onUploaded }: DropZoneProps) {
           >
             <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
           </motion.div>
-          <p className="mt-4 text-lg font-medium">
+          <p className="mt-4 text-lg font-semibold tracking-[-0.02em]">
             {isDragActive ? "Lepaskan file di sini..." : "Tarik & letakkan file di sini"}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            atau klik untuk memilih file. Mendukung format Excel (.xlsx, .xls), CSV, PDF, dan DOCX (maks. 50MB)
+            atau pilih dari perangkat Anda. Excel, CSV, PDF, dan DOCX hingga 50 MB per berkas.
           </p>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
             <Badge variant="secondary">.xlsx</Badge>
             <Badge variant="secondary">.csv</Badge>
             <Badge variant="secondary">.pdf</Badge>
@@ -132,10 +137,10 @@ export function DropZone({ onUploaded }: DropZoneProps) {
             className="space-y-2"
           >
             {uploadedFiles.map((file, i) => (
-              <div key={i} className="glass flex items-center gap-3 rounded-lg px-4 py-3">
+              <div key={i} className="surface flex min-w-0 items-center gap-3 px-4 py-3">
                 {fileIcon(file.name)}
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{file.name}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium" title={file.name}>{file.name}</p>
                   <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                 </div>
                 <CheckCircle2 className="h-5 w-5 text-emerald-500" />

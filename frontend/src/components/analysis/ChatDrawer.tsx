@@ -46,6 +46,15 @@ export function ChatDrawer({ analysisId }: Props) {
       .catch(() => {});
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open]);
+
   const pathAnalysisId = pathname.match(/^\/analysis\/([^/]+)/)?.[1] || null;
   const activeAnalysisId = analysisId || pathAnalysisId || analyses[0]?.id || null;
 
@@ -99,7 +108,7 @@ export function ChatDrawer({ analysisId }: Props) {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Sorry, I couldn't process that question. Please try again." },
+        { role: "assistant", content: "Pertanyaan belum dapat diproses. Silakan coba lagi." },
       ]);
     } finally {
       setSending(false);
@@ -111,145 +120,96 @@ export function ChatDrawer({ analysisId }: Props) {
       <Button
         onClick={() => setOpen(true)}
         size="icon"
-        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
+        aria-label="Buka asisten data"
+        className="fixed bottom-24 right-4 z-30 h-12 w-12 rounded-2xl shadow-lg md:bottom-6 md:right-6 md:h-14 md:w-14"
       >
         <MessageSquare className="h-6 w-6" />
       </Button>
 
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 z-50 flex h-screen w-96 flex-col border-l bg-card shadow-xl"
-          >
-            <div className="flex items-center justify-between border-b px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Bot className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold">Ask about your data</h3>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.length === 0 && (
-                  <div className="py-8 text-center text-sm text-muted-foreground">
-                    <Bot className="mx-auto mb-2 h-8 w-8" />
-                    <p>Ask any question about your analysis data.</p>
-                    <p className="mt-1 text-xs">Use @ to choose which uploaded file to discuss.</p>
-                    <div className="mt-3 space-y-1 text-xs">
-                      <p className="cursor-pointer hover:text-foreground" onClick={() => setInput("Give me a summary")}>
-                        &quot;Give me a summary&quot;
-                      </p>
-                      <p className="cursor-pointer hover:text-foreground" onClick={() => setInput("What are the key metrics?")}>
-                        &quot;What are the key metrics?&quot;
-                      </p>
-                      <p className="cursor-pointer hover:text-foreground" onClick={() => setInput("What do you recommend?")}>
-                        &quot;What do you recommend?&quot;
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    {msg.role === "assistant" && (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                        <Bot className="h-4 w-4 text-primary" />
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                    {msg.role === "user" && (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary">
-                        <User className="h-4 w-4 text-primary-foreground" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {sending && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    </div>
-                    <span className="text-sm text-muted-foreground">Thinking...</span>
-                  </div>
-                )}
-
-                <div ref={endRef} />
-              </div>
-            </ScrollArea>
-
-            <div className="border-t p-4">
-              {selectedUpload ? (
-                <div className="mb-2">
-                  <Badge variant="secondary" className="gap-1">
-                    Context: {selectedUpload.original_name}
-                    <button
-                      type="button"
-                      className="ml-1 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => setSelectedUpload(null)}
-                    >
-                      x
-                    </button>
-                  </Badge>
+          <>
+            <motion.button
+              type="button"
+              aria-label="Tutup asisten data"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-[2px]"
+              onClick={() => setOpen(false)}
+            />
+            <motion.aside
+              aria-label="Asisten data"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 240 }}
+              className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l bg-card shadow-2xl sm:w-[420px]"
+            >
+              <div className="flex items-center justify-between border-b px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold">Tanya tentang data Anda</h3>
                 </div>
-              ) : null}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setInput(value);
-                    const match = value.match(/(?:^|\s)@([^\s@]*)$/);
-                    setMentionQuery(match ? match[1] : null);
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  placeholder="Ask about your data... (type @ to choose file)"
-                  className="flex-1 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  disabled={sending}
-                />
-                <Button size="icon" onClick={handleSend} disabled={sending || !input.trim()}>
-                  <Send className="h-4 w-4" />
+                <Button variant="ghost" size="icon" aria-label="Tutup asisten data" onClick={() => setOpen(false)}>
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
-              {mentionQuery !== null && (
-                <div className="mt-2 max-h-40 overflow-y-auto rounded-md border bg-background p-1">
-                  {filteredUploads.length === 0 ? (
-                    <p className="px-2 py-1 text-xs text-muted-foreground">No matching files</p>
-                  ) : (
-                    filteredUploads.slice(0, 8).map((upload) => (
-                      <button
-                        type="button"
-                        key={upload.id}
-                        className="w-full rounded px-2 py-1 text-left text-sm hover:bg-muted"
-                        onClick={() => setMentionFromUpload(upload)}
-                      >
-                        {upload.original_name}
-                      </button>
-                    ))
+
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {messages.length === 0 && (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                      <Bot className="mx-auto mb-2 h-8 w-8" />
+                      <p>Tanyakan apa pun tentang hasil analisis.</p>
+                      <p className="mt-1 text-xs">Gunakan @ untuk memilih berkas yang ingin dibahas.</p>
+                      <div className="mx-auto mt-4 max-w-xs space-y-1 text-xs">
+                        <button type="button" className="block w-full rounded-lg px-2 py-1.5 hover:bg-muted hover:text-foreground" onClick={() => setInput("Berikan ringkasan data ini")}>Ringkas data ini</button>
+                        <button type="button" className="block w-full rounded-lg px-2 py-1.5 hover:bg-muted hover:text-foreground" onClick={() => setInput("Apa metrik terpentingnya?")}>Tunjukkan metrik penting</button>
+                        <button type="button" className="block w-full rounded-lg px-2 py-1.5 hover:bg-muted hover:text-foreground" onClick={() => setInput("Apa yang sebaiknya saya lakukan berikutnya?")}>Berikan rekomendasi</button>
+                      </div>
+                    </div>
                   )}
+
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                      {msg.role === "assistant" && <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10"><Bot className="h-4 w-4 text-primary" /></div>}
+                      <div className={`max-w-[82%] rounded-xl px-3 py-2 text-sm ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                      </div>
+                      {msg.role === "user" && <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary"><User className="h-4 w-4 text-primary-foreground" /></div>}
+                    </div>
+                  ))}
+
+                  {sending && <div className="flex items-center gap-2"><div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10"><Loader2 className="h-4 w-4 animate-spin text-primary" /></div><span className="text-sm text-muted-foreground">Menyiapkan jawaban...</span></div>}
+                  <div ref={endRef} />
                 </div>
-              )}
-            </div>
-          </motion.div>
+              </ScrollArea>
+
+              <div className="border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4">
+                {selectedUpload && <div className="mb-2"><Badge variant="secondary" className="max-w-full gap-1"><span className="truncate">Konteks: {selectedUpload.original_name}</span><button type="button" aria-label="Hapus konteks berkas" className="ml-1 text-xs text-muted-foreground hover:text-foreground" onClick={() => setSelectedUpload(null)}>×</button></Badge></div>}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setInput(value);
+                      const match = value.match(/(?:^|\s)@([^\s@]*)$/);
+                      setMentionQuery(match ? match[1] : null);
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSend()}
+                    aria-label="Pertanyaan untuk asisten data"
+                    placeholder="Tulis pertanyaan..."
+                    className="min-w-0 flex-1 rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    disabled={sending}
+                  />
+                  <Button size="icon" className="shrink-0 rounded-xl" aria-label="Kirim pertanyaan" onClick={handleSend} disabled={sending || !input.trim()}><Send className="h-4 w-4" /></Button>
+                </div>
+                {mentionQuery !== null && <div className="mt-2 max-h-40 overflow-y-auto rounded-xl border bg-background p-1">{filteredUploads.length === 0 ? <p className="px-2 py-1 text-xs text-muted-foreground">Berkas tidak ditemukan</p> : filteredUploads.slice(0, 8).map((upload) => <button type="button" key={upload.id} className="w-full truncate rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted" onClick={() => setMentionFromUpload(upload)}>{upload.original_name}</button>)}</div>}
+              </div>
+            </motion.aside>
+          </>
         )}
       </AnimatePresence>
     </>

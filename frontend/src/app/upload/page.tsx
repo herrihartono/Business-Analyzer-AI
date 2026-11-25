@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getUploads, startAnalysis, type UploadFile } from "@/lib/api";
 import { formatFileSize, formatDate } from "@/lib/utils";
-import { FileSpreadsheet, Play, Loader2 } from "lucide-react";
+import { AlertCircle, FileSpreadsheet, Play, Loader2, RefreshCw } from "lucide-react";
+import { normalizeApiError } from "@/lib/interface.mjs";
 
 export default function UploadPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: uploads = [] } = useQuery<UploadFile[]>({
+  const { data: uploads = [], isLoading, error, refetch } = useQuery<UploadFile[]>({
     queryKey: ["uploads"],
     queryFn: getUploads,
   });
@@ -38,61 +39,87 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-3xl font-bold tracking-tight">Upload Center</h1>
-        <p className="text-muted-foreground">Upload business data files for AI analysis</p>
-      </motion.div>
+    <div className="page-shell">
+      <section className="page-heading">
+        <div>
+          <h1>Tambahkan data bisnis.</h1>
+          <p>Pilih beberapa berkas sekaligus. Kami akan menyimpan data lebih dulu sebelum analisis dimulai.</p>
+        </div>
+      </section>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <DropZone onUploaded={handleUploaded} />
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <Card className="glass">
+        <Card className="surface border-0 shadow-none">
           <CardHeader>
-            <CardTitle className="text-base">Upload History</CardTitle>
+            <CardTitle className="text-base">Berkas tersimpan</CardTitle>
           </CardHeader>
           <CardContent>
-            {uploads.length === 0 ? (
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((item) => <div key={item} className="h-16 animate-pulse rounded-xl bg-muted" />)}
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center py-10 text-center">
+                <AlertCircle className="h-8 w-8 text-destructive" />
+                <p className="mt-3 font-semibold">Riwayat unggahan belum dapat dimuat</p>
+                <p className="mt-1 max-w-md text-sm text-muted-foreground">
+                  {normalizeApiError(error, "Periksa layanan API lalu coba lagi.")}
+                </p>
+                <Button variant="outline" className="mt-4 gap-2 rounded-xl" onClick={() => refetch()}>
+                  <RefreshCw className="h-4 w-4" /> Coba lagi
+                </Button>
+              </div>
+            ) : uploads.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                No files uploaded yet
+                Belum ada berkas. Area unggah di atas siap digunakan.
               </p>
             ) : (
               <div className="space-y-2">
                 {uploads.map((file) => (
                   <div
                     key={file.id}
-                    className="flex items-center gap-4 rounded-lg border p-3"
+                    className="flex flex-col gap-3 rounded-xl border p-3 sm:flex-row sm:items-center sm:gap-4"
                   >
-                    <FileSpreadsheet className="h-5 w-5 shrink-0 text-primary" />
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium">{file.original_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatFileSize(file.file_size)} &middot; {formatDate(file.created_at)}
-                      </p>
+                    <div className="flex min-w-0 w-full items-center gap-3 sm:flex-1">
+                      <FileSpreadsheet className="h-5 w-5 shrink-0 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium" title={file.original_name}>{file.original_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(file.file_size)} &middot; {formatDate(file.created_at)}
+                        </p>
+                      </div>
                     </div>
-                    <Badge variant={file.status === "analyzed" ? "success" : "secondary"}>
-                      {file.status}
-                    </Badge>
-                    {file.status === "uploaded" && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleAnalyze(file.id)}
-                        disabled={analyzeMutation.isPending && analyzeMutation.variables === file.id}
-                        className="gap-1"
-                      >
-                        {analyzeMutation.isPending && analyzeMutation.variables === file.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Play className="h-3 w-3" />
-                        )}
-                        Analyze
-                      </Button>
-                    )}
+                    <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
+                      <Badge variant={file.status === "analyzed" ? "success" : "secondary"}>
+                        {file.status === "analyzed" ? "Dianalisis" : "Tersimpan"}
+                      </Badge>
+                      {file.status === "uploaded" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAnalyze(file.id)}
+                          disabled={analyzeMutation.isPending && analyzeMutation.variables === file.id}
+                          className="gap-1 rounded-lg"
+                        >
+                          {analyzeMutation.isPending && analyzeMutation.variables === file.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Play className="h-3 w-3" />
+                          )}
+                          Analisis
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
+            )}
+            {analyzeMutation.isError && (
+              <p className="mt-4 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {normalizeApiError(analyzeMutation.error, "Analisis belum dapat dimulai. Coba lagi.")}
+              </p>
             )}
           </CardContent>
         </Card>

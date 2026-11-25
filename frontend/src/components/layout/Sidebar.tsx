@@ -2,99 +2,76 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Upload,
-  BarChart3,
   Lightbulb,
   Table2,
-  MessageSquare,
-  ChevronLeft,
-  ChevronRight,
-  Brain,
+  Sprout,
+  CircleHelp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { getNavigationItems, isNavigationItemActive } from "@/lib/interface.mjs";
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/upload", label: "Upload Center", icon: Upload },
-  { href: "/insights", label: "Insights", icon: Lightbulb },
-  { href: "/explorer", label: "Data Explorer", icon: Table2 },
-];
+const icons = [LayoutDashboard, Upload, Lightbulb, Table2];
+const navItems = getNavigationItems().map((item, index) => ({ ...item, icon: icons[index] }));
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <TooltipProvider delayDuration={0}>
-      <motion.aside
-        animate={{ width: collapsed ? 68 : 240 }}
-        transition={{ duration: 0.2 }}
-        className="relative flex h-screen flex-col border-r bg-card"
-      >
-        <div className="flex h-14 items-center gap-2 px-4">
-          <Brain className="h-7 w-7 shrink-0 text-primary" />
-          {!collapsed && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-lg font-bold tracking-tight"
-            >
-              SmartBiz
-            </motion.span>
-          )}
+      <aside className="relative hidden h-dvh w-[76px] shrink-0 flex-col border-r bg-card md:flex xl:w-[248px]">
+        <div className="flex h-[72px] items-center gap-3 px-4 xl:px-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-primary text-primary-foreground">
+            <Sprout className="h-5 w-5" />
+          </div>
+          <div className="hidden min-w-0 xl:block">
+            <p className="truncate text-base font-semibold tracking-[-0.025em]">SmartBiz</p>
+            <p className="truncate text-xs text-muted-foreground">Ruang kerja bisnis</p>
+          </div>
         </div>
 
-        <Separator />
-
-        <nav className="flex-1 space-y-1 p-2">
+        <nav className="flex-1 space-y-1.5 px-3 py-5" aria-label="Navigasi utama">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = isNavigationItemActive(pathname, item.href);
             const link = (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 )}
               >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
+                <item.icon className="h-[18px] w-[18px] shrink-0" />
+                <span className="hidden xl:inline">{item.label}</span>
               </Link>
             );
 
-            if (collapsed) {
-              return (
-                <Tooltip key={item.href}>
-                  <TooltipTrigger asChild>{link}</TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
-              );
-            }
-            return link;
+            return (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>{link}</TooltipTrigger>
+                <TooltipContent side="right" className="xl:hidden">{item.label}</TooltipContent>
+              </Tooltip>
+            );
           })}
         </nav>
 
-        <div className="p-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-full"
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
+        <div className="m-3 rounded-2xl bg-secondary p-3 xl:p-4">
+          <CircleHelp className="h-5 w-5 text-primary" />
+          <div className="mt-3 hidden xl:block">
+            <p className="text-sm font-semibold">Butuh bantuan?</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Gunakan asisten data di kanan bawah.
+            </p>
+          </div>
         </div>
-      </motion.aside>
+      </aside>
     </TooltipProvider>
   );
 }
